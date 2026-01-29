@@ -1,0 +1,19 @@
+# Ambiente Virtual (O mais importante!)
+venv/
+.venv/
+
+# Cache do Python (Arquivos compilados que o Python gera sozinho)
+__pycache__/
+*.py[cod]
+
+# Configurações do VSCode
+.vscode/
+*.code-workspace
+
+# Arquivos de sistema do Windows
+Thumbs.db
+desktop.ini
+
+# Pasta de uploads (Geralmente não enviamos as fotos/PDFs de teste para o Git)
+uploads/*
+!uploads/.gitkeep
