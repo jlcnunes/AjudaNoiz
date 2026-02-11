@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, redirect
 from database import inicializar_banco, executar_autoteste, get_db_connection
 
-app = Flask(__name__, template_folder='../templates')
+app = Flask(__name__, 
+            template_folder='../templates',
+            static='../static')
 
 
 @app.route('/')
