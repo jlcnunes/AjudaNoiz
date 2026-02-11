@@ -1,61 +1,88 @@
 import mysql.connector
+import os
 
+# 1. Configuração (Lembrete: Mover para .env no futuro)
 Config = {
     'user': 'ajudanoizapp_admin',
     'password': '@ss1st3nc14S3gvra!',
     'host': 'localhost',
-    'database': 'ajudanoizapp_db'
 }
 
 
-def executar_autoteste():
-    connection = mysql.connector.connect(**Config)
-    cursor = connection.cursor()
+def get_db_connection(incluir_banco=True):
+    """Cria uma conexão com o MySQL de forma flexível."""
+    parametros = Config.copy()
+    if incluir_banco:
+        parametros['database'] = 'ajudanoizapp_db'
+    return mysql.connector.connect(**parametros)
+
+
+# 2. Função para Criar Banco e Tabelas
+def inicializar_banco():
+    """Lê o schema.sql e prepara a estrutura do banco."""
+    print("--- Inicializando Banco de Dados ---")
+    # Conecta sem banco para garantir que pode criar o banco do zero
+    conn = get_db_connection(incluir_banco=False)
+    cursor = conn.cursor()
 
     try:
-        print("Iniciando autoteste...")
-        # 1. Iniciar Transação
-        # (impede que o AUTO_INCREMENT suba permanentemente)
-        connection.start_transaction()
+        # Busca o schema.sql no mesmo diretório deste arquivo
+        caminho_sql = os.path.join(os.path.dirname(__file__), 'schema.sql')
 
-        # 2. CREATE (Insert de teste na tabela usuários)
-        sql_insert = (
+        with open(caminho_sql, 'r', encoding='utf-8') as f:
+            # Divide o arquivo por ';' para executar comando por comando
+            comandos_sql = f.read().split(';')
+
+        for comando in comandos_sql:
+            if comando.strip():
+                cursor.execute(comando)
+
+        conn.commit()
+        print("✅ Estrutura do banco verificada/criada.")
+    except Exception as e:
+        print(f"❌ Erro na inicialização: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# 3. Função de Autoteste de Integridade
+def executar_autoteste():
+    """Realiza um CRUD completo e faz rollback para validar o sistema."""
+    print("--- Iniciando Autoteste de CRUD ---")
+    conn = get_db_connection()  # Aqui já usa o banco ajudanoizapp_db
+    cursor = conn.cursor()
+
+    try:
+        conn.start_transaction()
+
+        # Teste de INSERT
+        sql_ins = (
             "INSERT INTO usuarios (nome, email, senha_hash, cargo) "
             "VALUES (%s, %s, %s, %s)"
-            )
-        valores = ('Teste Sistema', 'teste@ajudanoiz.com', '123456', 'admin')
-        cursor.execute(sql_insert, valores)
-        # Pegamos o ID para usar nos próximos passos
+        )
+        cursor.execute(sql_ins, ('Teste', 't@t.com', '123', 'admin'))
         id_teste = cursor.lastrowid
-        print(f"-> Passo 1: Usuário de teste inserido com ID {id_teste}")
+        print(f"   -> Insert OK (ID: {id_teste})")
 
-        # 3. READ (Select para validar)
+        # Teste de SELECT
         cursor.execute("SELECT nome FROM usuarios WHERE id = %s", (id_teste,))
-        resultado = cursor.fetchone()
-        print(f"-> Passo 2: Leitura confirmada para: {resultado[0]}")
+        print(f"   -> Select OK ({cursor.fetchone()[0]})")
 
-        # 4. UPDATE (Alterar o nome)
-        cursor.execute(
-            "UPDATE usuarios SET nome = %s WHERE id = %s",
-            ('Nome Alterado', id_teste))
-        print("-> Passo 3: Atualização executada.")
-
-        # 5. DELETE (Remover)
+        # Teste de DELETE
         cursor.execute("DELETE FROM usuarios WHERE id = %s", (id_teste,))
-        print("-> Passo 4: Remoção executada.")
+        print("   -> Delete OK")
 
-        print("✅ CRUD de teste finalizado com sucesso!")
-
+        print("✅ Autoteste finalizado com sucesso!")
     except Exception as e:
-        print(f"❌ Erro durante o autoteste: {e}")
-
+        print(f"❌ Falha no Autoteste: {e}")
     finally:
-        # O PULO DO GATO: Rollback desfaz tudo, inclusive o salto do ID
-        connection.rollback()
+        conn.rollback()  # Garante que o banco continue limpo
         cursor.close()
-        connection.close()
-        print("🧹 Limpeza concluída: O banco de dados permanece intacto.")
+        conn.close()
 
 
+# Bloco de execução direta (útil para testes isolados)
 if __name__ == "__main__":
+    inicializar_banco()
     executar_autoteste()

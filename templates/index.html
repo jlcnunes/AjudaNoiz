@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta chaset="UTF-8">
+        <meta name="viewerport" content="width=device-width, initial-scale1.0">
+        <title>AjudaNoiz - Suporte Humanizado</title>
+        <style>
+            body { font-family: seans-serif; max-width: 500px; margin: 50px auto; padding: 20px; line-height: 1.6;}
+            .form-group { margin-bottom: 15px; }
+            label {display: block; font-weight: bold; }
+            input, select, textarea {width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box }
+            button { background-color: #25d366; color: white; border: none; padding: 10px 15px; cursor: pointer; font-size: 16px; border-radius: 5px; }
+            button:hover {background-color: #128c7e; }
+        </style>
+    </head>
+    <body>
+        <h1>Solicitar Ajuda 🛠️</h1>
+        <p>Preencha os dados abaixo e um ténico entrará em contato.</p>
+
+        <form action="/enviar" method="POST">
+            <div class="form-group">
+                <label for="nome">Nome Completo:</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" name="email" placeholder="exempo@dominio.com" required>
+            </div>
+
+
+            <div class="form-group">
+                <label for="WhatsApp">WhatsApp:</label>
+                <input type="tel" id="whatsapp" name="whatsapp" placeholder="(00) 00000-0000" required>
+            </div>
+
+            <div class="form-group">
+                <label for="servio">Tipo de Serviço:</label>
+                <select id="servico" name="servico">
+                    <option value="suporte_remoto">Suporte Remoto</option>
+                    <option value="limpeza_otimizacao">Limpeza e Otimização</option>
+                    <option valeu="configuracao_rede">Configuração de Rede</option>
+                    <option value="outro">Outro</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="descricao">O que está aconecendo?</label>
+                <textarea id="descricao" name="descricao" rows="4" required></textarea>
+            </div>
+        
+            <button type="submitir">Enviar Solicitação</button>
+        </form>
+    </body>
+</html>
