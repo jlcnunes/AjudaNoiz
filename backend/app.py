@@ -3,7 +3,7 @@ from database import inicializar_banco, executar_autoteste, get_db_connection
 
 app = Flask(__name__, 
             template_folder='../templates',
-            static='../static')
+            static_folder='../static')
 
 
 @app.route('/')
