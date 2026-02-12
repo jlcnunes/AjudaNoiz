@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel Admin - AjudaNoiz</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="admin-body">
+    <h1>Painel de Chamados 📋</h1>
+    <a href="/">⬅ Voltar para o Formulário</a>
+
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Serviço</th>
+                <th>WhatsApp</th>
+                <th>Descrição</th>
+                <th>Data</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for chamado in chamados %}
+            <tr>
+                <td>{{ chamado.id }}</td>
+                <td>{{ chamado.cliente_nome }}</td>
+                <td>{{ chamado.servico_titulo }}</td>
+                <td>{{ chamado.cliente_whatsapp }}</td>
+                <td>{{ chamado.descricao }}</td>
+                <td>{{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>
+                    <span class="status-badge status-{{ chamado.status }}">
+                        {{ chamado.status }}
+                    </span>
+                </td>
+                <td class="acoes-container">
+                    <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn-excluir" onclick="return confirm('Tem certeza?')">
+                            🗑️
+                        </button>
+                    </form>
+
+                    <button class="btn-acao">✅ Assumir</button>
+                    
+                    <button class="btn-acao">⏳</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">Nenhum chamado encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

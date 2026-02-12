@@ -1,3 +1,5 @@
+/** Estilo para o formulário */
+
 body { 
     font-family: seans-serif; 
     max-width: 500px; 
@@ -35,3 +37,67 @@ button {
 button:hover {
     background-color: #128c7e; 
 }
+
+/** Estilos para o Painel Admin */
+.admin-body {
+    max-width: 90% !important; /* Painel precisa de mais espaço que o formulário */
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+}
+
+.admin-table th, .admin-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+.admin-table th {
+    background-color: #25d366;
+    color: white;
+}
+
+.admin-table tr:nth-child(even) { background-color: #f2f2f2; }
+.admin-table tr:hover { background-color: #ddd; }
+
+/* Organiza os botões em linha dentro da célula */
+.acoes-container {
+    display: flex;
+    gap: 8px; /* Espaço entre os botões */
+    align-items: center;
+}
+
+.btn-acao {
+    padding: 5px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.btn-excluir {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-excluir:hover { background-color: #cc0000; }
+
+/* Badges de Status (Opcional, mas ajuda no visual) */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.status-pendente { background-color: #ffeeba; color: #856404; }
+.status-progresso { background-color: #b8daff; color: #004085; }

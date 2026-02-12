@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect
 from database import inicializar_banco, executar_autoteste, get_db_connection
 
-app = Flask(__name__, 
+app = Flask(__name__,
             template_folder='../templates',
             static_folder='../static')
 
@@ -11,6 +11,7 @@ def home():
     return render_template('index.html')
 
 
+# * Recebe  os dados do formulário para gravar no banco.
 @app.route('/enviar', methods=['POST'])
 def enviar():
     # * 1. Capturar os dados do formulário
@@ -43,6 +44,43 @@ def enviar():
     # * (ou voltar para a home)
     return """<h1>Solicitação enviada!</h1><p>Em breve entraremos em contato.
             </p><a href='/'>Voltar</a>"""
+
+
+@app.route('/admin')
+def admin():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # *diconary=True facilita o uso no HTML
+
+    try:
+        cursor.execute("SELECT * FROM chamados ORDER BY data_criacao DESC")
+        chamados = cursor.fetchall()
+    except Exception as e:
+        print(f"❌ Erro ao listar chamados: {e}")
+        chamados = []
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render_template('admin.html', chamados=chamados)
+
+
+@app.route('/excluir/<int:id>', methods=['POST'])
+def excluir(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM chamados WHERE id = %s", (id,))
+        conn.commit()
+        print(f"🗑️ Chamado {id} excluído com sucesso!")
+    except Exception as e:
+        print(f"❌ Erro ao excluir: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect('/admin')
 
 
 if __name__ == "__main__":
