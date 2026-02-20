@@ -37,15 +37,19 @@
                     </span>
                 </td>
                 <td class="acoes-container">
-                    <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST" style="display: inline;">
-                        <button type="submit" class="btn-excluir" onclick="return confirm('Tem certeza?')">
+                    {% if chamado.status == 'pendente' %}
+                    <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
+                        <button type="submit" class="btn-acao" style="background-color: #b8daff;">
+                            🙋‍♂️ Assumir
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST">
+                        <button type="submit" class="btn-excluir" onclick="return confirm('Excluir este chamado?')">
                             🗑️
                         </button>
                     </form>
-
-                    <button class="btn-acao">✅ Assumir</button>
-                    
-                    <button class="btn-acao">⏳</button>
                 </td>
             </tr>
             {% else %}

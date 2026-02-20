@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS chamados(
     cliente_whatsapp VARCHAR(15) NOT NULL,
     servico_titulo VARCHAR(150) NOT NULL,
     descricao TEXT NOT NULL,
+    tecnico_id INT NULL,
+    FOREIGN KEY (tecnico_id) REFERENCES usuarios(id),
     status ENUM('Novo', 'Em progresso', 'Suspenso', 'Concluído', 'Cancelado') DEFAULT 'Novo',
     data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -83,6 +83,33 @@ def excluir(id):
     return redirect('/admin')
 
 
+@app.route('/assumir/<int:id>', methods=['POST'])
+def assumir_chamado(id):
+    # * Por equanto, fixamos o ID 1
+    # * No futuro, usaremos o di fo ténico logado: sesion[user_id]
+    id_tecnico = 1
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        sql = (
+            "UPDATE chamados "
+            "SET status = 'progresso'. tecnico_id = %s"
+            "WHERE id = %s"
+        )
+        cursor.execute(sql, (id_tecnico, id))
+        conn.commit()
+        print(f"🛠️ Chamado {id} assumido pelo técnico {id_tecnico}")
+    except Exception as e:
+        print(f"❌ Erro ao assumir chamado: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect('/admin')
+
+
 if __name__ == "__main__":
     # Prepara a estrutura
     inicializar_banco()
