@@ -1,5 +1,9 @@
 from flask import Flask, render_template, request, redirect
 from database import inicializar_banco, executar_autoteste, get_db_connection
+from flask import session, flash, url_for
+from werkzeug.security import check_password_hash
+
+app.secret_key = "N3v3rM3ssTh@tSh1tB0y"
 
 app = Flask(__name__,
             template_folder='../templates',
@@ -48,6 +52,8 @@ def enviar():
 
 @app.route('/admin')
 def admin():
+    if 'usuario_id' not in session:
+        return redirect('/login')
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     # *diconary=True facilita o uso no HTML
@@ -108,6 +114,36 @@ def assumir_chamado(id):
         conn.close()
 
     return redirect('/admin')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        senha = request.form.get('senha')
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM usuarios WHERE email = %s", (email,))
+        usuario = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if usuario and check_password_hash(usuario['senha_hash'], senha):
+            session['usuario_id'] = usuario['id']
+            session['usuario_nome'] = usuario['nome']
+            session['usuario_cargo'] = usuario['cargo']
+            return redirect('/admin')
+        else:
+            flash('E-mail ou senha incorretos!', 'danger')
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
 
 
 if __name__ == "__main__":
