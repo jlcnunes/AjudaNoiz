@@ -3,11 +3,12 @@ from database import inicializar_banco, executar_autoteste, get_db_connection
 from flask import session, flash, url_for
 from werkzeug.security import check_password_hash
 
-app.secret_key = "N3v3rM3ssTh@tSh1tB0y"
 
 app = Flask(__name__,
             template_folder='../templates',
             static_folder='../static')
+
+app.secret_key = "N3v3rM3ssTh@tSh1tB0y"
 
 
 @app.route('/')
@@ -91,23 +92,75 @@ def excluir(id):
 
 @app.route('/assumir/<int:id>', methods=['POST'])
 def assumir_chamado(id):
-    # * Por equanto, fixamos o ID 1
-    # * No futuro, usaremos o di fo ténico logado: sesion[user_id]
-    id_tecnico = 1
+    # * Verifica se o usuário está logado
+    if 'usuario_id' not in session:
+        return redirect('/login')
 
+    # * PEGA O ID REAL DO USUÁRIO LOGADO (Ex: 117)
+    id_tecnico = session['usuario_id']
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        sql = (
-            "UPDATE chamados "
-            "SET status = 'progresso'. tecnico_id = %s"
-            "WHERE id = %s"
-        )
+        sql = """
+            UPDATE chamados
+            SET status = 'Em progresso', tecnico_id = %s
+            WHERE id = %s
+        """
+
         cursor.execute(sql, (id_tecnico, id))
         conn.commit()
         print(f"🛠️ Chamado {id} assumido pelo técnico {id_tecnico}")
     except Exception as e:
         print(f"❌ Erro ao assumir chamado: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect('/admin')
+
+
+@app.route('/suspender/<int:id>', methods=['POST'])
+def suspender_chamado(id):
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Usando 3 aspas para evitar erros de espaço e quebra de linha
+        sql = """
+            UPDATE chamados
+            SET status = 'Suspenso'
+            WHERE id = %s
+        """
+        cursor.execute(sql, (id,))
+        conn.commit()
+        print(f"⏳ Chamado {id} foi suspenso.")
+    except Exception as e:
+        print(f"❌ Erro ao suspender: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect('/admin')
+
+
+@app.route('/concluir/<int:id>', methods=['POST'])
+def concluir_chamado(id):
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Atualiza o status para 'concluido'
+        sql = "UPDATE chamados SET status = 'Concluído' WHERE id = %s"
+        cursor.execute(sql, (id,))
+        conn.commit()
+    except Exception as e:
+        print(f"❌ Erro ao concluir: {e}")
         conn.rollback()
     finally:
         cursor.close()

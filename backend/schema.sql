@@ -6,7 +6,7 @@ USE ajudanoizapp_db;
 CREATE TABLE IF NOT EXISTS chamados(
     id INT AUTO_INCREMENT PRIMARY KEY,
     cliente_nome VARCHAR(100) NOT NULL,
-    cliente_email VARCHAR(100) NOT NULL,tecnico_id 
+    cliente_email VARCHAR(100) NOT NULL,
     cliente_whatsapp VARCHAR(15) NOT NULL,
     servico_titulo VARCHAR(150) NOT NULL,
     descricao TEXT NOT NULL,

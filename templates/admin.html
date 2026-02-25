@@ -37,12 +37,32 @@
                     </span>
                 </td>
                 <td class="acoes-container">
-                    {% if chamado.status == 'pendente' %}
-                    <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
-                        <button type="submit" class="btn-acao" style="background-color: #b8daff;">
-                            🙋‍♂️ Assumir
-                        </button>
-                    </form>
+                    {% if chamado.status|trim == 'Novo' %}
+                        <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
+                            <button type="submit" class="btn-acao" style="background-color: #b8daff;">
+                                🙋‍♂️ Assumir
+                            </button>
+                        </form>
+
+                    {% elif chamado.status|trim == 'Em progresso' %}
+                        <form action="{{ url_for('suspender_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn-acao" style="background-color: #ffeeba;">
+                                ⏳ Suspender
+                            </button>
+                        </form>
+                    
+                        <form action="{{ url_for('concluir_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn-acao" style="background-color: #c3e6cb;">
+                                ✅ Concluir
+                            </button>
+                        </form> 
+
+                    {% elif chamado.status|trim == 'Suspenso' %}
+                        <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
+                            <button type="submit" class="btn-acao" style="background-color: #b8daff;">
+                                ▶️ Retomar
+                            </button>
+                        </form>
                     {% endif %}
 
                     <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST">
