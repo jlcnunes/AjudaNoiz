@@ -169,6 +169,25 @@ def concluir_chamado(id):
     return redirect('/admin')
 
 
+def registrar_log(chamado_id, acao):
+    usuario_id = session.get('usuario_id')  # *Pega o ID do admin logado.
+    if not usuario_id:
+        return
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        sql = """NSER INTO historico_chamados
+        (chamado_id, usuario_id, acao) VALUES (%s, %s, %s)"""
+        cursor.execute(sql, (chamado_id, usuario_id, acao))
+        conn.commit()
+    except Exception as e:
+        print(f"❌ Erro no log: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':

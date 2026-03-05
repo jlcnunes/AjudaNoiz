@@ -36,3 +36,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
     cargo ENUM('admin', 'tecnico') DEFAULT 'tecnico',
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Tabela para o log automático (Timeline)
+CREATE TABLE IF NOT EXISTS historico_chamados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    chamado_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    acao VARCHAR(255) NOT NULL,
+    data_acao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chamado_id) REFERENCES chamados(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
