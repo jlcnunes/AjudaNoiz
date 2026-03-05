@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalhes do Chamado #{{ chamado.id }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="admin-body">
+    <h1>Detalhes do Chamado #{{ chamado.id }}</h1>
+    
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; color: black;">
+        <p><strong>Cliente:</strong> {{ chamado.cliente_nome }}</p>
+        <p><strong>Serviço:</strong> {{ chamado.servico_titulo }}</p>
+        <p><strong>Descrição:</strong> {{ chamado.descricao }}</p>
+        <p><strong>Status Atual:</strong> {{ chamado.status }}</p>
+    </div>
+
+    <h2>⏳ Linha do Tempo (Histórico)</h2>
+    <ul style="list-style: none; padding: 0;">
+        {% for log in historico %}
+            <li style="margin-bottom: 10px; padding: 10px; border-left: 4px solid #007bff; background: #f8f9fa; color: black;">
+                <strong>{{ log.data_acao.strftime('%d/%m/%Y %H:%M') }}</strong><br>
+                <span>{{ log.nome_usuario }}: {{ log.acao }}</span>
+            </li>
+        {% else %}
+            <li>Nenhuma ação registrada ainda.</li>
+        {% endfor %}
+    </ul>
+
+    <br>
+    <a href="/admin" class="btn-acao" style="background-color: #6c757d; color: white; text-decoration: none; padding: 10px;">
+        ⬅ Voltar ao Painel
+    </a>
+</body>
+</html>

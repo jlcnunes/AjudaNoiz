@@ -60,7 +60,10 @@ def admin():
     # *diconary=True facilita o uso no HTML
 
     try:
-        cursor.execute("SELECT * FROM chamados ORDER BY data_criacao DESC")
+        cursor.execute(
+            "SELECT * FROM chamados "
+            "WHERE ativo = 1 ORDER BY data_criacao DESC"
+            )
         chamados = cursor.fetchall()
     except Exception as e:
         print(f"❌ Erro ao listar chamados: {e}")
@@ -72,14 +75,39 @@ def admin():
     return render_template('admin.html', chamados=chamados)
 
 
-@app.route('/excluir/<int:id>', methods=['POST'])
-def excluir(id):
+def registrar_log(chamado_id, acao):
+    usuario_id = session.get('usuario_id')  # *Pega o ID do admin logado.
+    if not usuario_id:
+        return
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("DELETE FROM chamados WHERE id = %s", (id,))
+        sql = """INSERT INTO historico_chamados
+        (chamado_id, usuario_id, acao) VALUES (%s, %s, %s)"""
+        cursor.execute(sql, (chamado_id, usuario_id, acao))
         conn.commit()
-        print(f"🗑️ Chamado {id} excluído com sucesso!")
+    except Exception as e:
+        print(f"❌ Erro no log: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route('/excluir/<int:id>', methods=['POST'])
+def excluir(id):
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        sql = "UPDATE chamados SET ativo = 0 WHERE id = %s"
+        cursor.execute(sql, (id,))
+        conn.commit()
+        print(f"🗑️ Chamado {id} arquivado/excluído do painel principal!")
+        # * Grava o histórico
+        registrar_log(id, "Chamado arquivado/excluido do painel principal")
     except Exception as e:
         print(f"❌ Erro ao excluir: {e}")
         conn.rollback()
@@ -101,15 +129,22 @@ def assumir_chamado(id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        sql = """
-            UPDATE chamados
-            SET status = 'Em progresso', tecnico_id = %s
-            WHERE id = %s
-        """
+        cursor.execute("SELECT status FROM chamados WHERE id = %s", (id,))
+        chamado_atual = cursor.fetchone()
 
+        sql = """
+            UPDATE chamados SET status = 'Em progresso',
+            tecnico_id = %s WHERE id = %s"""
         cursor.execute(sql, (id_tecnico, id))
         conn.commit()
-        print(f"🛠️ Chamado {id} assumido pelo técnico {id_tecnico}")
+
+        if chamado_atual and chamado_atual['status'] == 'Suspenso':
+            mensagem_log = "Retomou o atendimento (estava suspenso)"
+        else:
+            mensagem_log = "Assumiu o chamado e iniciou o atendimento"
+
+        registrar_log(id, mensagem_log)
+        print(f"✅ {mensagem_log} no chamado {id}")
     except Exception as e:
         print(f"❌ Erro ao assumir chamado: {e}")
         conn.rollback()
@@ -137,6 +172,8 @@ def suspender_chamado(id):
         cursor.execute(sql, (id,))
         conn.commit()
         print(f"⏳ Chamado {id} foi suspenso.")
+        # *Grava o histórico
+        registrar_log(id, "Suspendeu o chamado e mudou status para Suspenso")
     except Exception as e:
         print(f"❌ Erro ao suspender: {e}")
         conn.rollback()
@@ -159,6 +196,8 @@ def concluir_chamado(id):
         sql = "UPDATE chamados SET status = 'Concluído' WHERE id = %s"
         cursor.execute(sql, (id,))
         conn.commit()
+        # *Grava o histórico
+        registrar_log(id, "Concluiu o chamado e mudou status para Concluído")
     except Exception as e:
         print(f"❌ Erro ao concluir: {e}")
         conn.rollback()
@@ -169,23 +208,36 @@ def concluir_chamado(id):
     return redirect('/admin')
 
 
-def registrar_log(chamado_id, acao):
-    usuario_id = session.get('usuario_id')  # *Pega o ID do admin logado.
-    if not usuario_id:
-        return
+@app.route('/chamado/<int:id>')
+def ver_chamado(id):
+    if 'usuario_id' not in session:
+        return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        sql = """NSER INTO historico_chamados
-        (chamado_id, usuario_id, acao) VALUES (%s, %s, %s)"""
-        cursor.execute(sql, (chamado_id, usuario_id, acao))
-        conn.commit()
-    except Exception as e:
-        print(f"❌ Erro no log: {e}")
-    finally:
-        cursor.close()
-        conn.close()
+    cursor = conn.cursor(dictionary=True)
+
+    # 1. Busca os dados do chamado
+    cursor.execute("SELECT * FROM chamados WHERE id = %s", (id,))
+    chamado = cursor.fetchone()
+
+    # 2. Busca o histórico (Timeline) com o nome de quem fez a ação (JOIN)
+    sql_hist = """
+        SELECT h.*, u.nome as nome_usuario
+        FROM historico_chamados h
+        JOIN usuarios u ON h.usuario_id = u.id
+        WHERE h.chamado_id = %s
+        ORDER BY h.data_acao DESC
+    """
+    cursor.execute(sql_hist, (id,))
+    historico = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'detalhes_chamado.html',
+        chamado=chamado, historico=historico
+    )
 
 
 @app.route('/login', methods=['GET', 'POST'])
