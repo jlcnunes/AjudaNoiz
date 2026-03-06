@@ -28,8 +28,16 @@
     </ul>
 
     <br>
-    <a href="/admin" class="btn-acao" style="background-color: #6c757d; color: white; text-decoration: none; padding: 10px;">
-        ⬅ Voltar ao Painel
-    </a>
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+        {% if chamado.ativo == 1 %}
+            <a href="/admin" class="btn-acao" style="background-color: #6c757d; color: white; text-decoration: none; padding: 10px; border-radius: 4px;">
+                ⬅ Voltar ao Painel Ativo
+            </a>
+        {% else %}
+            <a href="/arquivo" class="btn-acao" style="background-color: #17a2b8; color: white; text-decoration: none; padding: 10px; border-radius: 4px;">
+                ⬅ Voltar ao Arquivo
+            </a>
+        {% endif %}
+    </div>
 </body>
 </html>

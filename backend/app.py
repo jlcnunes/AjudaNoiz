@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect
 from database import inicializar_banco, executar_autoteste, get_db_connection
-from flask import session, flash, url_for
+from flask import session, flash
 from werkzeug.security import check_password_hash
 
 
@@ -28,28 +28,42 @@ def enviar():
 
     # * 2. Salvar no Banco de Dados
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
+
     try:
-        sql = (
-            "INSERT INTO chamados(cliente_nome, cliente_email, "
-            "cliente_whatsapp, servico_titulo, descricao) "
-            "VALUES (%s, %s, %s, %s, %s)"
-        )
-        cursor.execute(sql, (nome, email, whatsapp, servico, descricao))
+        cursor.execute('SELECT id FROM clientes WHERE email = %s', (email,))
+        cliente_existente = cursor.fetchone()
+
+        if cliente_existente:
+            cliente_id = cliente_existente['id']
+
+            if cliente_existente['whatsapp'] != whatsapp or cliente_existente['nome'] != nome:
+                sql_update = "UPDATE clientes SET nome = %s, whatsapp = %s WHERE id = %s"
+                cursor.execute(sql_update, (nome, whatsapp, cliente_id))
+                print(f"🔄 Dados do cliente {cliente_id} atualizados (WhatsApp/Nome).")
+            
+        else:
+            sql_novo_cliente = "INSERT INTO clientes (nome, email, whatsapp) VALUES (%s, %s, %s)"
+            cursor.execute(sql_novo_cliente, (nome, email, whatsapp))
+            cliente_id = cursor.lastrowid
+            print(f"✨ Novo cliente cadastrado com ID: {cliente_id}")
+        
+        sql_chamado = """
+            INSERT INTO chamados (cliente_id, cliente_nome, cliente_email, cliente_whatsapp, servico_titulo, descricao)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql_chamado, (cliente_id, nome, email, whatsapp, servico, descricao))
+        
         conn.commit()
-        print(f"✅ Novo chamado recebido de: {nome}")
+    
     except Exception as e:
-        print(f"❌ Erro ao salvar chamado: {e}")
+        print(f"❌ Erro ao processar envio: {e}")
         conn.rollback()
     finally:
         cursor.close()
         conn.close()
 
-    # * 3. Redirecionar para uma página de agradecimento
-    # * (ou voltar para a home)
-    return """<h1>Solicitação enviada!</h1><p>Em breve entraremos em contato.
-            </p><a href='/'>Voltar</a>"""
-
+    return """<h1>Solicitação enviada!</h><p>Em breve estraremos em contato.</><a href='/'>Voltar</a>"""
 
 @app.route('/admin')
 def admin():
@@ -62,7 +76,8 @@ def admin():
     try:
         cursor.execute(
             "SELECT * FROM chamados "
-            "WHERE ativo = 1 ORDER BY data_criacao DESC"
+            "WHERE ativo = 1 AND data_exclusao "
+            "IS NULL ORDER BY data_criacao DESC"
             )
         chamados = cursor.fetchall()
     except Exception as e:
@@ -87,8 +102,9 @@ def registrar_log(chamado_id, acao):
         (chamado_id, usuario_id, acao) VALUES (%s, %s, %s)"""
         cursor.execute(sql, (chamado_id, usuario_id, acao))
         conn.commit()
+        print(f"✅ Log gravado no banco: {acao}")
     except Exception as e:
-        print(f"❌ Erro no log: {e}")
+        print(f"❌ Erro ao gravar no banco: {e}")
     finally:
         cursor.close()
         conn.close()
@@ -102,10 +118,14 @@ def excluir(id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        sql = "UPDATE chamados SET ativo = 0 WHERE id = %s"
-        cursor.execute(sql, (id,))
+        from datetime import datetime
+        agora = datetime.now()
+
+        sql = "UPDATE chamados SET ativo = 0, data_exclusao = %s WHERE id = %s"
+        cursor.execute(sql, (agora, id,))
         conn.commit()
         print(f"🗑️ Chamado {id} arquivado/excluído do painel principal!")
+
         # * Grava o histórico
         registrar_log(id, "Chamado arquivado/excluido do painel principal")
     except Exception as e:
@@ -127,7 +147,7 @@ def assumir_chamado(id):
     # * PEGA O ID REAL DO USUÁRIO LOGADO (Ex: 117)
     id_tecnico = session['usuario_id']
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     try:
         cursor.execute("SELECT status FROM chamados WHERE id = %s", (id,))
         chamado_atual = cursor.fetchone()
@@ -135,14 +155,15 @@ def assumir_chamado(id):
         sql = """
             UPDATE chamados SET status = 'Em progresso',
             tecnico_id = %s WHERE id = %s"""
-        cursor.execute(sql, (id_tecnico, id))
+        cursor.execute(sql, (id_tecnico, id,))
         conn.commit()
 
-        if chamado_atual and chamado_atual['status'] == 'Suspenso':
+        if chamado_atual and chamado_atual['status'].strip() == 'Suspenso':
             mensagem_log = "Retomou o atendimento (estava suspenso)"
         else:
             mensagem_log = "Assumiu o chamado e iniciou o atendimento"
 
+        # *Grava o histórico
         registrar_log(id, mensagem_log)
         print(f"✅ {mensagem_log} no chamado {id}")
     except Exception as e:
@@ -172,6 +193,7 @@ def suspender_chamado(id):
         cursor.execute(sql, (id,))
         conn.commit()
         print(f"⏳ Chamado {id} foi suspenso.")
+
         # *Grava o histórico
         registrar_log(id, "Suspendeu o chamado e mudou status para Suspenso")
     except Exception as e:
@@ -196,6 +218,7 @@ def concluir_chamado(id):
         sql = "UPDATE chamados SET status = 'Concluído' WHERE id = %s"
         cursor.execute(sql, (id,))
         conn.commit()
+
         # *Grava o histórico
         registrar_log(id, "Concluiu o chamado e mudou status para Concluído")
     except Exception as e:
@@ -216,28 +239,84 @@ def ver_chamado(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # 1. Busca os dados do chamado
-    cursor.execute("SELECT * FROM chamados WHERE id = %s", (id,))
-    chamado = cursor.fetchone()
+    try:
+        # 1. Busca os dados do chamado
+        cursor.execute("SELECT * FROM chamados WHERE id = %s", (id,))
+        chamado = cursor.fetchone()
 
-    # 2. Busca o histórico (Timeline) com o nome de quem fez a ação (JOIN)
-    sql_hist = """
-        SELECT h.*, u.nome as nome_usuario
-        FROM historico_chamados h
-        JOIN usuarios u ON h.usuario_id = u.id
-        WHERE h.chamado_id = %s
-        ORDER BY h.data_acao DESC
-    """
-    cursor.execute(sql_hist, (id,))
-    historico = cursor.fetchall()
+        if not chamado:
+            return "Chamado não encontrado", 404
 
-    cursor.close()
-    conn.close()
+        # 2. Busca o histórico (Timeline) com o nome de quem fez a ação (JOIN)
+        sql_hist = """
+            SELECT h.*, u.nome as nome_usuario
+            FROM historico_chamados h
+            JOIN usuarios u ON h.usuario_id = u.id
+            WHERE h.chamado_id = %s
+            ORDER BY h.data_acao DESC
+        """
+        cursor.execute(sql_hist, (id,))
+        historico = cursor.fetchall()
+
+    except Exception as e:
+        print(f"❌ Erro SQL em ver_chamados: {e}")
+        return f"Erro ao carregar: {e}", 500
+    finally:
+        cursor.close()
+        conn.close()
 
     return render_template(
         'detalhes_chamado.html',
         chamado=chamado, historico=historico
     )
+
+
+@app.route('/arquivo')
+def visualizar_arquivo():
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    # * Captura os filtros da URL (se existirem)
+    f_id = request.args.get('id')
+    f_cliente = request.args.get('cliente')
+    f_tecnico = request.args.get('tecnico')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # * Base da query: apenas chamados desativados
+    sql = """
+        SELECT c.*, u.nome as nome_tenico
+        FROM chamados c
+        LEFT JOIN usuarios u ON c.tecnico_id = u.id
+        WHERE (c.ativo = 0 OR c.data_exclusao IS NOT NULL)
+    """
+    params = []
+
+    # * Filtros dinâmicos
+    if f_id:
+        sql += " AND c.id = %s"
+        params.append(f_id)
+    if f_cliente:
+        sql += " AND c.cliente_nome LIKE %s"
+        params.append(f"%{f_cliente}%")
+    if f_tecnico:
+        sql += " AND u.nome LIKE %s"
+        params.append(f"%{f_tecnico}%")
+
+    sql += " ORDER BY data_criacao DESC"
+
+    try:
+        cursor.execute(sql, params)
+        chamados_excluidos = cursor.fetchall()
+    except Exception as e:
+        print("❌ Erro SQL no Filtro do Arquivo: {e}")
+        return f"Erro ao filtrar: {e}", 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render_template('arquivo.html', chamados=chamados_excluidos)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -268,6 +347,14 @@ def login():
 def logout():
     session.clear()
     return redirect('/login')
+
+# TODO 1- Criar tela e lógica do arquivo morto com filtro por id,
+# TODO data de criacao e exclsão do chamado, usuário e técnico
+# TODO 2- Criar tela e lógica para cadastro de ténicos.
+# TODO 3- Criar tela e lógica para cadastro de cliente.
+# TODO 4- Criar tela e lógica para agendamento de atendimento.
+# TODO 5- Criar tela e lógica para gerar cobrança atendimento.
+# TODO 6- Ocultar senha do banco de dado do database.py
 
 
 if __name__ == "__main__":
