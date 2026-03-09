@@ -9,10 +9,10 @@
     <h1>🗄️ Arquivo de Chamados (Excluídos)</h1>
 
     <form method="GET" action="/arquivo" class="filtro-container" style="margin-bottom: 20px;">
-        <input type="number" name="id" placeholder="ID">
-        <input type="text" name="cliente" placeholder="Cliente">
-        <input type="text" name="tecnico" placeholder="Técnico">
-        <buttom type="submit">🔍 Filtrar</buttom>
+        <input type="number" name="id" placeholder="ID" value="{{ request.args.get('id', '') }}">
+        <input type="text" name="cliente" placeholder="Cliente" value="{{ request.args.get('cliente', '') }}">
+        <input type="text" name="tecnico" placeholder="Técnico" value="{{ request.args.get('tecnico', '') }}">
+        <button type="submit">🔍 Filtrar</button>
         <a href="/arquivo">Limpar</a>
     </form>
 

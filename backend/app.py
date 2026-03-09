@@ -41,21 +41,22 @@ def enviar():
                 sql_update = "UPDATE clientes SET nome = %s, whatsapp = %s WHERE id = %s"
                 cursor.execute(sql_update, (nome, whatsapp, cliente_id))
                 print(f"🔄 Dados do cliente {cliente_id} atualizados (WhatsApp/Nome).")
-            
+
         else:
             sql_novo_cliente = "INSERT INTO clientes (nome, email, whatsapp) VALUES (%s, %s, %s)"
             cursor.execute(sql_novo_cliente, (nome, email, whatsapp))
             cliente_id = cursor.lastrowid
             print(f"✨ Novo cliente cadastrado com ID: {cliente_id}")
-        
+
         sql_chamado = """
-            INSERT INTO chamados (cliente_id, cliente_nome, cliente_email, cliente_whatsapp, servico_titulo, descricao)
+            INSERT INTO chamados (cliente_id, cliente_nome, cliente_email,
+            cliente_whatsapp, servico_titulo, descricao)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql_chamado, (cliente_id, nome, email, whatsapp, servico, descricao))
-        
+
         conn.commit()
-    
+
     except Exception as e:
         print(f"❌ Erro ao processar envio: {e}")
         conn.rollback()
@@ -63,7 +64,8 @@ def enviar():
         cursor.close()
         conn.close()
 
-    return """<h1>Solicitação enviada!</h><p>Em breve estraremos em contato.</><a href='/'>Voltar</a>"""
+    return """<h1>Solicitação enviada!</h><p>Em breve entraremos em contato.</><a href='/'>Voltar</a>"""
+
 
 @app.route('/admin')
 def admin():
@@ -286,7 +288,7 @@ def visualizar_arquivo():
 
     # * Base da query: apenas chamados desativados
     sql = """
-        SELECT c.*, u.nome as nome_tenico
+        SELECT c.*, u.nome as nome_tecnico
         FROM chamados c
         LEFT JOIN usuarios u ON c.tecnico_id = u.id
         WHERE (c.ativo = 0 OR c.data_exclusao IS NOT NULL)
@@ -304,13 +306,13 @@ def visualizar_arquivo():
         sql += " AND u.nome LIKE %s"
         params.append(f"%{f_tecnico}%")
 
-    sql += " ORDER BY data_criacao DESC"
+    sql += " ORDER BY c.data_criacao DESC"
 
     try:
         cursor.execute(sql, params)
         chamados_excluidos = cursor.fetchall()
     except Exception as e:
-        print("❌ Erro SQL no Filtro do Arquivo: {e}")
+        print(f"❌ Erro SQL no Filtro do Arquivo: {e}")
         return f"Erro ao filtrar: {e}", 500
     finally:
         cursor.close()
@@ -348,8 +350,8 @@ def logout():
     session.clear()
     return redirect('/login')
 
-# TODO 1- Criar tela e lógica do arquivo morto com filtro por id,
-# TODO data de criacao e exclsão do chamado, usuário e técnico
+
+
 # TODO 2- Criar tela e lógica para cadastro de ténicos.
 # TODO 3- Criar tela e lógica para cadastro de cliente.
 # TODO 4- Criar tela e lógica para agendamento de atendimento.

@@ -2,6 +2,15 @@
 CREATE DATABASE IF NOT EXISTS ajudanoizapp_db;
 USE ajudanoizapp_db;
 
+-- Criação da tabela de clientes
+CREATE TABLE IF NOT EXISTS clientes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    whatsapp VARCHAR(20),
+    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Criação da tabela de Chamdos/Leads
 CREATE TABLE IF NOT EXISTS chamados(
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -50,13 +59,4 @@ CREATE TABLE IF NOT EXISTS historico_chamados (
     data_acao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (chamado_id) REFERENCES chamados(id) ON DELETE CASCADE,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-);
-
--- Criação da tabela de clientes
-CREATE TABLE IF NOT EXISTS clientes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE,
-    whatsapp VARCHAR(20),
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
