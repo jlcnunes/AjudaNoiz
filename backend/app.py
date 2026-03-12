@@ -320,6 +320,82 @@ def visualizar_arquivo():
 
     return render_template('arquivo.html', chamados=chamados_excluidos)
 
+@app.route('/admin/clientes')
+def listar_clientes():
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Busca clientes e conta o total de chamados vinculados a cada um
+        sql = """
+            SELECT c.id, c.nome, c.email, c.whatsapp, c.data_cadastro,
+                    COUNT(ch.id) as total_chamados
+            FROM clientes c
+            LEFT JOIN chamados ch ON c.id = ch.cliente_id
+            GROUP BY c.id
+            ORDER BY c.nome ASC
+        """
+        cursor.execute(sql)
+        clientes = cursor.fetchall()
+    except Exception as e:
+        print(f"❌ Erro ao listar clientes: {e}")
+        clientes = []
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render_template('clientes.html', clientes=clientes)
+
+
+@app.route('/admin/clientes/salvar', methods=['POST'])
+def salvar_cliente():
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    cliente_id = request.form.get('id')  # Se vier ID, é edição. Se não, é novo.
+    nome = request.form.get('nome')
+    email = request.form.get('email').strip().lower()
+    whatsapp = request.form.get('whatsapp')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        if cliente_id:
+            # UPDATE
+            sql = """UPDATE clientes SET nome = %s, email = %s,
+            whatsapp = %s WHERE id = %s"""
+            cursor.executave(sql, (nome, email, whatsapp, cliente_id))
+            flash("Cliente atualizado com sucesso!", "success")
+        else:
+            # INSERT
+            sql = "INSERT INTO clientes (nome, email, whatsapp) VALUES (%s, %s, %s)"
+            cursor.execute(sql, (nome, email, whatsapp))
+            flash("Novo cliente cadastrado!", "success")
+
+        conn.commit()
+    except Exception as e:
+        print(f"❌ Erro ao salvar cliente: {e}")
+        flash("Erro ao salvar: E-mail já cadastrado ou erro no banco.", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+    return redirect('/admin/clientes')
+
+
+@app.route('/admin/clientes/buscar/<int:id>')
+def buscar_clientes(id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM clientes WHERE id = %s", (id,))
+    cliente = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return cliente  # Retonar JSON
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -349,14 +425,6 @@ def login():
 def logout():
     session.clear()
     return redirect('/login')
-
-
-
-# TODO 2- Criar tela e lógica para cadastro de ténicos.
-# TODO 3- Criar tela e lógica para cadastro de cliente.
-# TODO 4- Criar tela e lógica para agendamento de atendimento.
-# TODO 5- Criar tela e lógica para gerar cobrança atendimento.
-# TODO 6- Ocultar senha do banco de dado do database.py
 
 
 if __name__ == "__main__":

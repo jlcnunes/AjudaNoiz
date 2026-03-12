@@ -24,20 +24,6 @@ input, select, textarea {
     box-sizing: border-box 
 }
 
-button { 
-    background-color: #25d366; 
-    color: white; 
-    border: none; 
-    padding: 10px 15px; 
-    cursor: pointer; 
-    font-size: 16px; 
-    border-radius: 5px; 
-}
-
-button:hover {
-    background-color: #128c7e; 
-}
-
 /** Estilos para o Painel Admin */
 .admin-body {
     max-width: 90% !important; /* Painel precisa de mais espaço que o formulário */
@@ -72,12 +58,19 @@ button:hover {
 }
 
 .btn-acao {
-    padding: 5px 8px;
     font-size: 12px;
     border-radius: 4px;
     border: 1px solid #ccc;
-    background-color: #f8f9fa;
+    background-color: #28a745;
+    color: white; 
+    text-decoration: none;
     cursor: pointer;
+    box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+    
+}
+
+.btn-acao:hover {
+    background-color: #128c7e; 
 }
 
 .btn-excluir {
@@ -101,3 +94,52 @@ button:hover {
 }
 .status-pendente { background-color: #ffeeba; color: #856404; }
 .status-progresso { background-color: #b8daff; color: #004085; }
+
+
+/* Garante que o formulário não adicione margens extras */
+.td-acoes form {
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+}
+
+.btn-voltar {
+    background-color: #6c757d; 
+    text-decoration: none; 
+    color: white; 
+    padding: 10px; 
+    border-radius: 4px;
+}
+
+/* Padronização final do botão para evitar variações de altura */
+.btn-acao, .btn-excluir, .btn-voltar {
+    height: 32px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+
+.acoes-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 32px; /* Garante que a célula não "encolha" */
+}
+
+.acoes-wrapper form {
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+
+.admin-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    vertical-align: middle; /* Alinhamento vertical clássico de tabela */
+}

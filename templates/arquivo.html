@@ -12,8 +12,8 @@
         <input type="number" name="id" placeholder="ID" value="{{ request.args.get('id', '') }}">
         <input type="text" name="cliente" placeholder="Cliente" value="{{ request.args.get('cliente', '') }}">
         <input type="text" name="tecnico" placeholder="Técnico" value="{{ request.args.get('tecnico', '') }}">
-        <button type="submit">🔍 Filtrar</button>
-        <a href="/arquivo">Limpar</a>
+        <button class="btn-acao" type="submit">🔍 Filtrar</button>
+        <a href="/arquivo" class="btn-acao">🧹 Limpar</a>
     </form>
 
     <table class="admin-table">
@@ -46,6 +46,6 @@
         </tbody>
     </table>
     <br>
-    <a href="/admin">⬅ Voltar ao Painel Ativo</a>
+    <a href="/admin" class="btn-voltar">⬅ Voltar ao Painel Ativo</a>
 </body>
 </html>

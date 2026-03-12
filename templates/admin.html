@@ -7,8 +7,12 @@
 </head>
 <body class="admin-body">
     <h1>Painel de Chamados 📋</h1>
-    <a href="/">⬅ Voltar para o Formulário</a>
-
+    <a href="/" class="btn-voltar">
+        ⬅ Voltar para o Formulário
+    </a>
+    <a href="/admin/clientes" class="btn-acao">
+        👥 Gerir Clientes
+    </a>
     <table class="admin-table">
         <thead>
             <tr>
@@ -39,40 +43,42 @@
                         {{ chamado.status }}
                     </span>
                 </td>
-                <td class="acoes-container">
-                    {% if chamado.status|trim == 'Novo' %}
-                        <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
-                            <button type="submit" class="btn-acao" style="background-color: #b8daff;">
-                                🙋‍♂️ Assumir
+                <td>
+                    <div class="acoes-wrapper">
+                        {% if chamado.status|trim == 'Novo' %}
+                            <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
+                                <button type="submit" class="btn-acao" style="background-color: #b8daff;">
+                                    🙋‍♂️ Assumir
+                                </button>
+                            </form>
+
+                        {% elif chamado.status|trim == 'Em progresso' %}
+                            <form action="{{ url_for('suspender_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-acao" style="background-color: #ffeeba;">
+                                    ⏳ Suspender
+                                </button>
+                            </form>
+                        
+                            <form action="{{ url_for('concluir_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-acao" style="background-color: #c3e6cb;">
+                                    ✅ Concluir
+                                </button>
+                            </form> 
+
+                        {% elif chamado.status|trim == 'Suspenso' %}
+                            <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
+                                <button type="submit" class="btn-acao" style="background-color: #b8daff;">
+                                    ▶️ Retomar
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST">
+                            <button type="submit" class="btn-excluir" onclick="return confirm('Excluir este chamado?')">
+                                🗑️
                             </button>
                         </form>
-
-                    {% elif chamado.status|trim == 'Em progresso' %}
-                        <form action="{{ url_for('suspender_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn-acao" style="background-color: #ffeeba;">
-                                ⏳ Suspender
-                            </button>
-                        </form>
-                    
-                        <form action="{{ url_for('concluir_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn-acao" style="background-color: #c3e6cb;">
-                                ✅ Concluir
-                            </button>
-                        </form> 
-
-                    {% elif chamado.status|trim == 'Suspenso' %}
-                        <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
-                            <button type="submit" class="btn-acao" style="background-color: #b8daff;">
-                                ▶️ Retomar
-                            </button>
-                        </form>
-                    {% endif %}
-
-                    <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST">
-                        <button type="submit" class="btn-excluir" onclick="return confirm('Excluir este chamado?')">
-                            🗑️
-                        </button>
-                    </form>
+                    </div>
                 </td>
             </tr>
             {% else %}
@@ -82,6 +88,6 @@
             {% endfor %}
         </tbody>
     </table>
-    <a href="/arquivo" style="float: right; color: #666;">📁 Acessar Chamados Arquivados</a>
+    <a href="/arquivo" class="btn-acao">📁 Acessar Chamados Arquivados</a>
 </body>
 </html>

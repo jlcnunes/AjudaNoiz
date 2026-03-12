@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerenciar Clientes - AjudaNoiz</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="admin-body">
+    <h1>👥 Gerenciamento de Clientes</h1>
+    
+    <div style="margin-bottom: 20px;">
+        <a href="/admin" class="btn-voltar">
+            ⬅ Voltar ao Painel
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="padding: 15px; margin-bottom: 20px; border-radius: 4px; 
+                      background-color: {{ '#d4edda' if category == 'success' else '#f8d7da' }}; 
+                      color: {{ '#155724' if category == 'success' else '#721c24' }};">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; color: black;">
+        <h3 id="form-title">➕ Cadastrar Novo Cliente</h3>
+        <form action="/admin/clientes/salvar" method="POST" id="cliente-form">
+            <input type="hidden" name="id" id="cliente-id">
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="text" name="nome" id="cliente-nome" placeholder="Nome Completo" required style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="email" name="email" id="cliente-email" placeholder="E-mail" required style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="text" name="whatsapp" id="cliente-whatsapp" placeholder="WhatsApp" required style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                
+                <button type="submit" class="btn-acao" style="background-color: #28a745; border: none; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                    💾 Salvar Cliente
+                </button>
+                <button type="button" onclick="limparFormulario()" class="btn-acao">
+                    Limpar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>WhatsApp</th>
+                <th>Chamados</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in clientes %}
+            <tr>
+                <td>#{{ cliente.id }}</td>
+                <td><strong>{{ cliente.nome }}</strong></td>
+                <td>{{ cliente.email }}</td>
+                <td>{{ cliente.whatsapp }}</td>
+                <td style="text-align: center;">{{ cliente.total_chamados }}</td>
+                <td>
+                    <button onclick="editarCliente('{{ cliente.id }}', '{{ cliente.nome }}', '{{ cliente.email }}', '{{ cliente.whatsapp }}')" 
+                            class="btn-acao" style="background-color: #ffc107; color: black; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+                        ✏️ Editar
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">Nenhum cliente cadastrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>
+    function editarCliente(id, nome, email, whatsapp) {
+        // Altera o título do formulário
+        document.getElementById('form-title').innerText = "✏️ Editando Cliente #" + id;
+        
+        // Preenche os campos do formulário
+        document.getElementById('cliente-id').value = id;
+        document.getElementById('cliente-nome').value = nome;
+        document.getElementById('cliente-email').value = email;
+        document.getElementById('cliente-whatsapp').value = whatsapp;
+        
+        // Foca no campo nome para facilitar
+        document.getElementById('cliente-nome').focus();
+        
+        // Rola a página para o topo suavemente
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function limparFormulario() {
+        document.getElementById('form-title').innerText = "➕ Cadastrar Novo Cliente";
+        document.getElementById('cliente-id').value = "";
+        document.getElementById('cliente-form').reset();
+    }
+    </script>
+</body>
+</html>
