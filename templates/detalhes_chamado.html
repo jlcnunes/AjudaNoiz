@@ -8,12 +8,44 @@
 <body class="admin-body">
     <h1>Detalhes do Chamado #{{ chamado.id }}</h1>
     
+    <div class="tempo-badge">
+        ⏱️ Tempo Total Investido: {{ tempo_total }}
+    </div>
+
     <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; color: black;">
         <p><strong>Cliente:</strong> {{ chamado.cliente_nome }}</p>
-        <p><strong>Serviço:</strong> {{ chamado.servico_titulo }}</p>
-        <p><strong>Descrição:</strong> {{ chamado.descricao }}</p>
         <p><strong>Status Atual:</strong> {{ chamado.status }}</p>
+        <p><strong>Descrição:</strong> {{ chamado.descricao }}</p>
     </div>
+
+    {% if chamado.ativo == 1 %}
+    <div class="nota-tecnica-container">
+        <h3>📝 Registrar Atendimento</h3>
+        <form action="{{ url_for('adicionar_nota', id=chamado.id) }}" method="POST" onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerText='Gravando...';">
+            <textarea name="nota" class="nota-textarea" rows="3" placeholder="Descreva o que foi feito..." required></textarea>
+            
+            <div class="nota-form-footer">
+                <div style="width: 150px;">
+                    <label>Tempo (min):</label>
+                    <input type="number" name="tempo" placeholder="Minutos" required min="1">
+                </div>
+                <button type="submit" class="btn-acao">Gravar Atendimento</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <h2>⏳ Linha do Tempo</h2>
+    <ul class="timeline">
+        {% for log in historico %}
+            <li class="timeline-item {% if 'Nota Técnica' in log.acao %}nota-importante{% endif %}">
+                <span class="timeline-date">{{ log.data_acao.strftime('%d/%m/%Y %H:%M') }}</span>
+                <div class="timeline-content">
+                    <strong>{{ log.nome_usuario }}:</strong> {{ log.acao }}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
 
     <h2>⏳ Linha do Tempo (Histórico)</h2>
     <ul style="list-style: none; padding: 0;">

@@ -84,7 +84,7 @@ input, select, textarea {
 
 .btn-excluir:hover { background-color: #cc0000; }
 
-/* Badges de Status (Opcional, mas ajuda no visual) */
+/** Badges de Status (Opcional, mas ajuda no visual) */
 .status-badge {
     padding: 4px 8px;
     border-radius: 12px;
@@ -96,7 +96,7 @@ input, select, textarea {
 .status-progresso { background-color: #b8daff; color: #004085; }
 
 
-/* Garante que o formulário não adicione margens extras */
+/** Garante que o formulário não adicione margens extras */
 .td-acoes form {
     margin: 0;
     padding: 0;
@@ -111,7 +111,7 @@ input, select, textarea {
     border-radius: 4px;
 }
 
-/* Padronização final do botão para evitar variações de altura */
+/** Padronização final do botão para evitar variações de altura */
 .btn-acao, .btn-excluir, .btn-voltar {
     height: 32px;
     line-height: 1;
@@ -142,4 +142,102 @@ input, select, textarea {
     border: 1px solid #ddd;
     padding: 12px;
     vertical-align: middle; /* Alinhamento vertical clássico de tabela */
+}
+/* Container da Nota Técnica */
+.nota-tecnica-container {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.nota-tecnica-container h3 {
+    margin-top: 0;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+.nota-textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-family: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+/** Estilização da Linha do Tempo (Timeline) */
+.timeline {
+    list-style: none;
+    padding: 0;
+    position: relative;
+}
+
+.timeline-item {
+    margin-bottom: 15px;
+    padding: 12px 15px;
+    border-left: 4px solid #007bff;
+    background: white;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/** Diferenciando Notas Técnicas no histórico */
+.timeline-item.nota-importante {
+    border-left-color: #28a745; /* Verde para notas */
+    background: #f0fff4;
+}
+
+.timeline-date {
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: #666;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.timeline-content {
+    color: #333;
+}
+
+/* Container do formulário de nota para alinhar tempo e botão */
+.nota-form-footer {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.input-tempo {
+    width: 120px !important; /* Força largura menor para o campo de minutos */
+    margin-top: 0 !important;
+}
+
+/* Badge de Tempo Acumulado */
+.tempo-badge {
+    background-color: #17a2b8;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 50px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nota-tecnica-container {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.nota-form-footer {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end; /* Alinha o botão com o campo de input */
+    margin-top: 10px;
 }

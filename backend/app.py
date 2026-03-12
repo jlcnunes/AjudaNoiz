@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect
 from database import inicializar_banco, executar_autoteste, get_db_connection
-from flask import session, flash
+from flask import session, flash, url_for
 from werkzeug.security import check_password_hash
 
 
@@ -241,36 +241,37 @@ def ver_chamado(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    try:
-        # 1. Busca os dados do chamado
-        cursor.execute("SELECT * FROM chamados WHERE id = %s", (id,))
-        chamado = cursor.fetchone()
+    # 1. Busca os detalhes do chamado
+    cursor.execute("SELECT * FROM chamados WHERE id = %s", (id,))
+    chamado = cursor.fetchone()
 
-        if not chamado:
-            return "Chamado não encontrado", 404
+    # 2. Busca o histórico (Timeline)
+    cursor.execute("""
+        SELECT h.*, u.nome as nome_usuario 
+        FROM historico_chamados h
+        JOIN usuarios u ON h.usuario_id = u.id
+        WHERE h.chamado_id = %s
+        ORDER BY h.data_acao DESC
+    """, (id,))
+    historico = cursor.fetchall()
 
-        # 2. Busca o histórico (Timeline) com o nome de quem fez a ação (JOIN)
-        sql_hist = """
-            SELECT h.*, u.nome as nome_usuario
-            FROM historico_chamados h
-            JOIN usuarios u ON h.usuario_id = u.id
-            WHERE h.chamado_id = %s
-            ORDER BY h.data_acao DESC
-        """
-        cursor.execute(sql_hist, (id,))
-        historico = cursor.fetchall()
+    # 3. NOVO: Soma o tempo total gasto em atividades
+    cursor.execute("SELECT SUM(tempo_gasto) as total_minutos FROM atividades WHERE chamado_id = %s", (id,))
+    resultado_tempo = cursor.fetchone()
+    total_minutos = resultado_tempo['total_minutos'] or 0
+    
+    # Converte para formato horas:minutos para exibição
+    horas = total_minutos // 60
+    minutos_restantes = total_minutos % 60
+    tempo_formatado = f"{horas}h {minutos_restantes}min"
 
-    except Exception as e:
-        print(f"❌ Erro SQL em ver_chamados: {e}")
-        return f"Erro ao carregar: {e}", 500
-    finally:
-        cursor.close()
-        conn.close()
+    cursor.close()
+    conn.close()
 
-    return render_template(
-        'detalhes_chamado.html',
-        chamado=chamado, historico=historico
-    )
+    return render_template('detalhes_chamado.html', 
+                           chamado=chamado, 
+                           historico=historico, 
+                           tempo_total=tempo_formatado)
 
 
 @app.route('/arquivo')
@@ -395,6 +396,38 @@ def buscar_clientes(id):
     cursor.close()
     conn.close()
     return cliente  # Retonar JSON
+
+
+@app.route('/chamado/<int:id>/nota', methods=['POST'])
+def adicionar_nota(id):
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    nota = request.form.get('nota')
+    tempo = request.form.get('tempo', 0) # Captura os minutos
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 1. Registra na tabela atividades (onde o tempo é contabilizado)
+        sql_atv = "INSERT INTO atividades (chamado_id, descricao, tempo_gasto) VALUES (%s, %s, %s)"
+        cursor.execute(sql_atv, (id, nota, tempo))
+
+        # 2. Registra no histórico (Timeline) para visualização rápida
+        acao = f"Nota Técnica ({tempo} min): {nota}"
+        cursor.execute("INSERT INTO historico_chamados (chamado_id, usuario_id, acao) VALUES (%s, %s, %s)", 
+                       (id, session['usuario_id'], acao))
+        
+        conn.commit()
+        flash(f'Atendimento de {tempo} min registrado!', 'success')
+    except Exception as e:
+        conn.rollback()
+        flash(f'Erro: {e}', 'danger')
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return redirect(url_for('ver_chamado', id=id))
 
 
 @app.route('/login', methods=['GET', 'POST'])
