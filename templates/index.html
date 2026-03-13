@@ -23,9 +23,34 @@
 
 
             <div class="form-group">
-                <label for="WhatsApp">WhatsApp:</label>
-                <input type="tel" id="whatsapp" name="whatsapp" placeholder="(00) 00000-0000" required>
+                <label for="whatsapp">WhatsApp:</label>
+                <input type="tel" 
+                    id="whatsapp" 
+                    name="whatsapp" 
+                    placeholder="(00) 00000-0000" 
+                    required 
+                    pattern="\(\d{2}\)\s\d{5}-\d{4}" 
+                    title="Formato esperado: (00) 00000-0000">
             </div>
+
+            <script>
+                // Máscara automática para formatar enquanto o usuário digita
+                const tel = document.getElementById('whatsapp')
+
+                tel.addEventListener('keypress', (e) => {
+                    let inputLength = tel.value.length
+                    if (inputLength === 0) tel.value += '('
+                    else if (inputLength === 3) tel.value += ') '
+                    else if (inputLength === 10) tel.value += '-'
+                })
+
+                tel.addEventListener('input', (e) => {
+                    // Impede que digitem mais que o necessário (15 caracteres: (XX) XXXXX-XXXX)
+                    if (tel.value.length > 15) {
+                        tel.value = tel.value.slice(0, 15)
+                    }
+                })
+            </script>
 
             <div class="form-group">
                 <label for="servio">Tipo de Serviço:</label>

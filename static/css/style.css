@@ -241,3 +241,16 @@ input, select, textarea {
     align-items: flex-end; /* Alinha o botão com o campo de input */
     margin-top: 10px;
 }
+
+/* No seu style.css, adicione/ajuste: */
+.input-tempo {
+    max-width: 150px;
+    display: inline-block;
+}
+
+/* Garante que o histórico novo ocupe bem a tela */
+.timeline {
+    margin-top: 30px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}

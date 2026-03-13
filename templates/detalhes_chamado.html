@@ -47,18 +47,6 @@
         {% endfor %}
     </ul>
 
-    <h2>⏳ Linha do Tempo (Histórico)</h2>
-    <ul style="list-style: none; padding: 0;">
-        {% for log in historico %}
-            <li style="margin-bottom: 10px; padding: 10px; border-left: 4px solid #007bff; background: #f8f9fa; color: black;">
-                <strong>{{ log.data_acao.strftime('%d/%m/%Y %H:%M') }}</strong><br>
-                <span>{{ log.nome_usuario }}: {{ log.acao }}</span>
-            </li>
-        {% else %}
-            <li>Nenhuma ação registrada ainda.</li>
-        {% endfor %}
-    </ul>
-
     <br>
     <div style="display: flex; gap: 10px; margin-top: 20px;">
         {% if chamado.ativo == 1 %}
