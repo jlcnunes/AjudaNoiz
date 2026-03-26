@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Equipe - AjudaNoiz</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="admin-body">
+    <header style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>👥 Gerenciamento de Equipe</h1>
+        <a href="/admin" class="btn-acao" style="background-color: #6c757d;">⬅ Painel</a>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <section class="admin-card">
+        <h3>➕ Novo Usuário</h3>
+        <form action="/admin/usuarios/salvar" method="POST" class="grid-form">
+            <div class="form-group">
+                <label>Nome Completo:</label>
+                <input type="text" name="nome" required>
+            </div>
+            
+            <div class="form-group">
+                <label>E-mail Corporativo:</label>
+                <input type="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label>Senha de Acesso:</label>
+                <input type="password" name="senha" required minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label>Nível de Permissão:</label>
+                <select name="cargo" required>
+                    <option value="tecnico">Técnico</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+
+            <div class="full-width">
+                <button type="submit" class="btn-acao">💾 Cadastrar na Equipe</button>
+            </div>
+        </form>
+    </section>
+
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Cargo</th>
+                <th>Data de Cadastro</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for usuario in usuarios %}
+            <tr>
+                <td><strong>{{ usuario.nome }}</strong></td>
+                <td>{{ usuario.email }}</td>
+                <td>
+                    <span class="badge {{ 'badge-admin' if usuario.cargo == 'admin' else 'badge-tecnico' }}">
+                        {{ usuario.cargo }}
+                    </span>
+                </td>
+                <td>{{ usuario.data_cadastro.strftime('%d/%m/%Y') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

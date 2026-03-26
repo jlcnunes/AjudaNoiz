@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Solicitação Recebida - AjudaNoiz</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body style="background-color: #f0f2f5;">
+    <div class="sucesso-container">
+        <div class="sucesso-icon">✅</div>
+        <h1>Solicitação Enviada!</h1>
+        <p>Recebemos o seu pedido. Um de nossos técnicos entrará em contato em breve.</p>
+        
+        <p>Seu número de protocolo é:</p>
+        <div class="protocolo-badge">#{{ chamado_id }}</div>
+        
+        <br>
+        <a href="/" class="btn-acao">Fazer Nova Solicitação</a>
+    </div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect
 from database import inicializar_banco, executar_autoteste, get_db_connection
 from flask import session, flash, url_for
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 app = Flask(__name__,
@@ -54,17 +54,19 @@ def enviar():
             VALUES (%s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql_chamado, (cliente_id, nome, email, whatsapp, servico, descricao))
+        protocolo = cursor.lastrowid 
 
         conn.commit()
+
+        return render_template('sucesso.html', chamado_id=protocolo)
 
     except Exception as e:
         print(f"❌ Erro ao processar envio: {e}")
         conn.rollback()
+        return f"Erro{e}"
     finally:
         cursor.close()
         conn.close()
-
-    return """<h1>Solicitação enviada!</h><p>Em breve entraremos em contato.</><a href='/'>Voltar</a>"""
 
 
 @app.route('/admin')
@@ -428,6 +430,47 @@ def adicionar_nota(id):
         conn.close()
     
     return redirect(url_for('ver_chamado', id=id))
+
+
+@app.route('/admin/usuarios')
+def gerenciar_usuarios():
+    if 'usuario_id' not in session or session.get('usuario_cargo') != 'admin':
+        flash('Acesso restrito a administradores!', 'danger')
+        return redirect('/admin')
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, nome, email, cargo, data_cadastro FROM usuarios")
+    usuarios = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return render_template('usuarios.html', usuarios=usuarios)
+
+
+@app.route('/admin/usuarios/salvar', methods=['POST'])
+def salvar_usuarios():
+    nome = request.form.get('nome')
+    email = request.form.get('email')
+    senha = request.form.get('senha')
+    cargo = request.form.get('cargo')
+
+    # Cripografa a senha anrtes de ser salva
+    senha_hash = generate_password_hash(senha)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO usuarios (nome, email, senha_hash, cargo) VALUES (%s, %s, %s, %s)",
+        (nome, email, senha_hash, cargo))
+        conn.commit()
+        flash('Usuario cadastrado com sucesso!', 'sucesso')
+    except Exception as e:
+        conn.rollback()
+        flash(f'Erro ao cadastrar: {e}', 'danger')
+    finally:
+        cursor.close()
+        conn.close()
+    return redirect('/admin/usuarios')
 
 
 @app.route('/login', methods=['GET', 'POST'])
