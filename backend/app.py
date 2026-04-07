@@ -31,7 +31,7 @@ def enviar():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        cursor.execute('SELECT id FROM clientes WHERE email = %s', (email,))
+        cursor.execute('SELECT id, nome, whatsapp FROM clientes WHERE email = %s', (email,))
         cliente_existente = cursor.fetchone()
 
         if cliente_existente:

@@ -7,19 +7,13 @@
 </head>
 <body class="admin-body">
     <h1>Painel de Chamados 📋</h1>
-    <a href="/" class="btn-voltar">
-        ⬅ Voltar para o Formulário
-    </a>
     
-    <div class="admin-card" style="border-left: 5px solid #007bff;">
-    <h3>👥 Gestão de Equipe</h3>
-    <p>Cadastre técnicos, altere permissões e gerencie quem acessa o sistema.</p>
-    <a href="{{ url_for('gerenciar_usuarios') }}" class="btn-acao">Gerenciar Usuários</a>
-    </div>
+<div class="admin-toolbar">
+    <a href="{{ url_for('gerenciar_usuarios') }}" class="btn-toolbar">👥 Gerenciar Equipe</a>
+    <a href="/admin/clientes" class="btn-toolbar">👤 Gerenciar Clientes</a>
+    <a href="/arquivo" class="btn-toolbar">📁 Chamados Arquivados</a>
+</div>
 
-    <a href="/admin/clientes" class="btn-acao">
-        👥 Gerir Clientes
-    </a>
     <table class="admin-table">
         <thead>
             <tr>
