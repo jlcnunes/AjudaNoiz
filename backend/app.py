@@ -36,6 +36,7 @@ def enviar():
 
         if cliente_existente:
             cliente_id = cliente_existente['id']
+            cursor.execute('UPDATE clientes SET ativo = 1 WHERE id = %s', (cliente_id,))
 
             if cliente_existente['whatsapp'] != whatsapp or cliente_existente['nome'] != nome:
                 sql_update = "UPDATE clientes SET nome = %s, whatsapp = %s WHERE id = %s"
@@ -338,8 +339,9 @@ def listar_clientes():
                     COUNT(ch.id) as total_chamados
             FROM clientes c
             LEFT JOIN chamados ch ON c.id = ch.cliente_id
+            WHERE c.ativo = 1
             GROUP BY c.id
-            ORDER BY c.nome ASC
+            ORDER BY c.data_cadastro DESC
         """
         cursor.execute(sql)
         clientes = cursor.fetchall()
@@ -371,7 +373,7 @@ def salvar_cliente():
             # UPDATE
             sql = """UPDATE clientes SET nome = %s, email = %s,
             whatsapp = %s WHERE id = %s"""
-            cursor.executave(sql, (nome, email, whatsapp, cliente_id))
+            cursor.execute(sql, (nome, email, whatsapp, cliente_id))
             flash("Cliente atualizado com sucesso!", "success")
         else:
             # INSERT
@@ -400,13 +402,40 @@ def buscar_clientes(id):
     return cliente  # Retonar JSON
 
 
+@app.route('/admin/clientes/excluir/<int:id>', methods=['POST'])
+def excluir_cliente(id):
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Soft Delete: Apenas marca como inativo
+        cursor.execute("UPDATE clientes SET ativo = 0 WHERE id = %s", (id,))
+        conn.commit()
+        flash("Cliente desativado com sucesso! O histórico foi preservado.", "sucesso")
+    except Exception as e:
+        conn.rollback()
+        flash(f"❌ Erro ao desativar cliente: {e}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+    return redirect('/admin/clientes')
+
+
 @app.route('/chamado/<int:id>/nota', methods=['POST'])
 def adicionar_nota(id):
+    print(f"DEBUG: Sessão atual: {session}")
     if 'usuario_id' not in session:
         return redirect('/login')
 
     nota = request.form.get('nota')
     tempo = request.form.get('tempo', 0) # Captura os minutos
+
+    # Limita o texto da timeline para não quebrar o layout, 
+    # mas mantém a nota completa na tabela atividades
+    nota_resumo = nota[:500] + "..." if len(nota) > 500 else nota
+    acao_para_historico = f"Nota Técnica ({tempo} min): {nota_resumo}"
     
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -415,16 +444,18 @@ def adicionar_nota(id):
         sql_atv = "INSERT INTO atividades (chamado_id, descricao, tempo_gasto) VALUES (%s, %s, %s)"
         cursor.execute(sql_atv, (id, nota, tempo))
 
-        # 2. Registra no histórico (Timeline) para visualização rápida
-        acao = f"Nota Técnica ({tempo} min): {nota}"
-        cursor.execute("INSERT INTO historico_chamados (chamado_id, usuario_id, acao) VALUES (%s, %s, %s)", 
-                       (id, session['usuario_id'], acao))
+        # 2. Registra na tabela HISTORICO_CHAMADOS (Aqui usamos o RESUMO)
+        sql_hist = "INSERT INTO historico_chamados (chamado_id, usuario_id, acao) VALUES (%s, %s, %s)"
+        cursor.execute(sql_hist, (id, session['usuario_id'], acao_para_historico))
         
         conn.commit()
         flash(f'Atendimento de {tempo} min registrado!', 'success')
     except Exception as e:
         conn.rollback()
-        flash(f'Erro: {e}', 'danger')
+        import traceback
+        print("Detailed Error:")
+        traceback.print_exc()
+        flash(f"❌ Erro técnico: {e}", "danger")
     finally:
         cursor.close()
         conn.close()
@@ -466,7 +497,34 @@ def salvar_usuarios():
         flash('Usuario cadastrado com sucesso!', 'sucesso')
     except Exception as e:
         conn.rollback()
-        flash(f'Erro ao cadastrar: {e}', 'danger')
+        flash(f'❌ Erro ao cadastrar: {e}', 'danger')
+    finally:
+        cursor.close()
+        conn.close()
+    return redirect('/admin/usuarios')
+
+
+# Rota para excluir Usuários (Técnicos/Admins)
+@app.route('/admin/usuarios/excluir/<int:id>', methods=['POST'])
+def excluir_usuario(id):
+    if 'usuario_id' not in session or session.get('usuario_cargo') != 'admin':
+        flash('Acesso restrito!', 'danger')
+        return redirect('/admin')
+
+    # Impede que o admin logado exclua a si mesmo
+    if id == session.get('usuario_id'):
+        flash('Você não pode excluir sua própria conta!', 'danger')
+        return redirect('/admin/usuarios')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+        conn.commit()
+        flash("Usuário removido da equipe!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash("❌ Erro: Este usuário pode estar vinculado a históricos de chamados.", "danger")
     finally:
         cursor.close()
         conn.close()

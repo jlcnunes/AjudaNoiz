@@ -8,23 +8,15 @@
 <body class="admin-body">
     <h1>👥 Gerenciamento de Clientes</h1>
     
-    <div style="margin-bottom: 20px;">
-        <a href="/admin" class="btn-voltar">
-            ⬅ Voltar ao Painel
-        </a>
-    </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div style="padding: 15px; margin-bottom: 20px; border-radius: 4px; 
-                      background-color: {{ '#d4edda' if category == 'success' else '#f8d7da' }}; 
-                      color: {{ '#155724' if category == 'success' else '#721c24' }};">
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ 'success' if category in ['success', 'sucesso'] else 'danger' }}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 
     <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; color: black;">
         <h3 id="form-title">➕ Cadastrar Novo Cliente</h3>
@@ -34,7 +26,7 @@
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <input type="text" name="nome" id="cliente-nome" placeholder="Nome Completo" required style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
                 <input type="email" name="email" id="cliente-email" placeholder="E-mail" required style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-                <input type="tel" name="whatsapp" id="whatsapp_cliente" placeholder="(00) 00000-0000" required pattern="\(\d{2}\)\s\d{5}-\d{4}" maxlength="15" title="Formato esperado: (00) 00000-0000" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="tel" name="whatsapp" id="cliente-whatsapp" placeholder="(00) 00000-0000" required pattern="\(\d{2}\)\s\d{5}-\d{4}" maxlength="15" title="Formato esperado: (00) 00000-0000" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
                 
                 <button type="submit" class="btn-acao" style="background-color: #28a745; border: none; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
                     💾 Salvar Cliente
@@ -65,11 +57,22 @@
                 <td>{{ cliente.email }}</td>
                 <td>{{ cliente.whatsapp }}</td>
                 <td style="text-align: center;">{{ cliente.total_chamados }}</td>
-                <td>
-                    <button onclick="editarCliente('{{ cliente.id }}', '{{ cliente.nome }}', '{{ cliente.email }}', '{{ cliente.whatsapp }}')" 
-                            class="btn-acao" style="background-color: #ffc107; color: black; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-                        ✏️ Editar
-                    </button>
+                <td style="white-space: nowrap;">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button type="button" class="btn-acao" 
+                                onclick="preencherFormulario('{{ cliente.id }}', '{{ cliente.nome }}', '{{ cliente.email }}', '{{ cliente.whatsapp }}')"
+                                style="padding: 5px 10px; margin: 0;">
+                            ✏️
+                        </button>
+
+                        <form action="{{ url_for('excluir_cliente', id=cliente.id) }}" method="POST" style="margin: 0;">
+                            <button type="submit" class="btn-excluir" 
+                                    onclick="return confirm('Deseja realmente desativar este cliente?')"
+                                    style="padding: 5px 10px; margin: 0;">
+                                🗑️
+                            </button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             {% else %}
@@ -80,8 +83,11 @@
         </tbody>
     </table>
 
+    <br>
+    <a href="/admin" class="btn-voltar">⬅ Voltar ao Painel de Chamados</a>
+
     <script>
-    function editarCliente(id, nome, email, whatsapp) {
+    function preencherFormulario(id, nome, email, whatsapp) {
         // Altera o título do formulário
         document.getElementById('form-title').innerText = "✏️ Editando Cliente #" + id;
         
@@ -104,7 +110,7 @@
         document.getElementById('cliente-form').reset();
     }
 
-    const inputZap = document.getElementById('whatsapp_cliente');
+    const inputZap = document.getElementById('cliente-whatsapp');
 
     inputZap.addEventListener('keyup', (e) => {
         let v = e.target.value.replace(/\D/g, ""); // Remove tudo que não é dígito

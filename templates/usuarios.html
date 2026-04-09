@@ -8,7 +8,6 @@
 <body class="admin-body">
     <header style="display: flex; justify-content: space-between; align-items: center;">
         <h1>👥 Gerenciamento de Equipe</h1>
-        <a href="/admin" class="btn-acao" style="background-color: #6c757d;">⬅ Painel</a>
     </header>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -58,6 +57,7 @@
                 <th>E-mail</th>
                 <th>Cargo</th>
                 <th>Data de Cadastro</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody>
@@ -71,9 +71,20 @@
                     </span>
                 </td>
                 <td>{{ usuario.data_cadastro.strftime('%d/%m/%Y') }}</td>
+                <td>
+                    <form action="{{ url_for('excluir_usuario', id=usuario.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn-excluir" onclick="return confirm('Remover este usuário da equipe?')">
+                            🗑️
+                        </button>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <br>
+    <a href="/admin" class="btn-voltar">⬅ Voltar ao Painel de Chamados</a>
+
 </body>
 </html>
