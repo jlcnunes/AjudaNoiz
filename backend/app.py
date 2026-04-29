@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, redirect
 from database import inicializar_banco, executar_autoteste, get_db_connection
 from flask import session, flash, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_mail import Mail, Message
+
+from flask_mail import Mail, Message  # Adicione no topo
 
 
 app = Flask(__name__,
@@ -9,6 +12,27 @@ app = Flask(__name__,
             static_folder='../static')
 
 app.secret_key = "N3v3rM3ssTh@tSh1tB0y"
+
+
+# Configurações do Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'ajudanoizapp@gmail.com'
+app.config['MAIL_PASSWORD'] = 'zhsv xqnh bclk cyme' # 16 dígitos sem espaços
+app.config['MAIL_DEFAULT_SENDER'] = ('AjudaNoiz', 'ajudanoizapp@gmail.com')
+
+mail = Mail(app)
+
+
+def enviar_email_notificacao(destinatario, assunto, corpo_texto):
+    try:
+        msg = Message(subject=assunto, recipients=[destinatario])
+        msg.body = corpo_texto
+        mail.send(msg)
+        print(f"📧 Notificação enviada para {destinatario}")
+    except Exception as e:
+        print(f"⚠️ Falha ao enviar notificação: {e}")
 
 
 @app.route('/')
@@ -58,6 +82,22 @@ def enviar():
         protocolo = cursor.lastrowid 
 
         conn.commit()
+
+        try:
+            assunto_email = f"🚀 Protocolo de Atendimento: #{protocolo}"
+            corpo_email = f"""Olá {nome}, tudo bem? 👋
+        
+                Passando para avisar que o seu chamado já caiu aqui no nosso sistema! 📥
+                🆔 Protocolo: #{protocolo}
+                🔧 Serviço: {servico}
+
+                Nossa equipe técnica já foi alertada e em breve entraremos em contato. 👨‍💻
+                Equipe AjudaNoiz ⚡"""
+        
+            enviar_email_notificacao(email, assunto_email, corpo_email)
+        
+        except Exception as e_mail:
+            print(f"⚠️ Erro ao enviar e-mail: {e_mail}")
 
         return render_template('sucesso.html', chamado_id=protocolo)
 
@@ -121,56 +161,93 @@ def excluir(id):
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     try:
-        from datetime import datetime
-        agora = datetime.now()
+        # 1. Busca os dados do cliente ANTES de deletar o chamado
+        cursor.execute('''
+            SELECT c.nome, c.email 
+            FROM chamados ch
+            JOIN clientes c ON ch.cliente_id = c.id
+            WHERE ch.id = %s
+        ''', (id,))
+        dados = cursor.fetchone()
 
-        sql = "UPDATE chamados SET ativo = 0, data_exclusao = %s WHERE id = %s"
-        cursor.execute(sql, (agora, id,))
+        # 2. Executa a exclusão no banco
+        cursor.execute("DELETE FROM chamados WHERE id = %s", (id,))
         conn.commit()
-        print(f"🗑️ Chamado {id} arquivado/excluído do painel principal!")
 
-        # * Grava o histórico
-        registrar_log(id, "Chamado arquivado/excluido do painel principal")
+        # 3. Se o chamado existia, envia a notificação de cancelamento
+        if dados:
+            assunto = f"❌ Chamado #{id} Cancelado/Excluído"
+            corpo = f"""Olá {dados['nome']},
+            
+            Informamos que o seu chamado de protocolo #{id} foi removido do nosso sistema.
+
+            Se isso foi um erro ou se você ainda precisa de suporte, por favor, abra uma nova solicitação em nosso site.
+
+            Atenciosamente,
+            Equipe AjudaNoiz ⚡"""
+            
+            enviar_email_notificacao(dados['email'], assunto, corpo)
+
+        flash(f"Chamado #{id} excluído com sucesso!", "success")
+        
     except Exception as e:
-        print(f"❌ Erro ao excluir: {e}")
         conn.rollback()
+        print(f"❌ Erro ao deletar: {e}")
+        flash("Erro ao excluir chamado. Ele pode ter históricos vinculados.", "danger")
     finally:
         cursor.close()
         conn.close()
 
     return redirect('/admin')
 
-
 @app.route('/assumir/<int:id>', methods=['POST'])
 def assumir_chamado(id):
-    # * Verifica se o usuário está logado
     if 'usuario_id' not in session:
         return redirect('/login')
 
-    # * PEGA O ID REAL DO USUÁRIO LOGADO (Ex: 117)
-    id_tecnico = session['usuario_id']
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+
     try:
-        cursor.execute("SELECT status FROM chamados WHERE id = %s", (id,))
-        chamado_atual = cursor.fetchone()
+        # 1. Busca dados do cliente E o status atual do chamado
+        cursor.execute('''
+            SELECT c.nome, c.email, ch.status 
+            FROM chamados ch
+            JOIN clientes c ON ch.cliente_id = c.id
+            WHERE ch.id = %s
+        ''', (id,))
+        dados = cursor.fetchone()
 
-        sql = """
-            UPDATE chamados SET status = 'Em progresso',
-            tecnico_id = %s WHERE id = %s"""
-        cursor.execute(sql, (id_tecnico, id,))
-        conn.commit()
+        if not dados:
+            flash("Chamado não encontrado.", "danger")
+            return redirect('/admin')
 
-        if chamado_atual and chamado_atual['status'].strip() == 'Suspenso':
+        # 2. Define a mensagem de log e e-mail baseada no status anterior
+        status_anterior = dados['status'].strip() if dados['status'] else ""
+        
+        if status_anterior == 'Suspenso':
             mensagem_log = "Retomou o atendimento (estava suspenso)"
+            assunto = "🚀 Atendimento Retomado"
+            corpo = f"Olá {dados['nome']}, o técnico {session['usuario_nome']} retomou o seu atendimento agora mesmo! ⚡"
+
         else:
             mensagem_log = "Assumiu o chamado e iniciou o atendimento"
+            assunto = "👨‍💻 Técnico Atribuído"
+            corpo = f"Olá {dados['nome']}, o técnico {session['usuario_nome']} já assumiu seu chamado e iniciou o diagnóstico! 🚀"
 
-        # *Grava o histórico
+        # 3. Atualiza o banco
+        cursor.execute("UPDATE chamados SET tecnico_id = %s, status = 'Em progresso' WHERE id = %s", 
+                    (session['usuario_id'], id))
+        conn.commit()
+        
+        # 4. Registra log e envia e-mail
         registrar_log(id, mensagem_log)
-        print(f"✅ {mensagem_log} no chamado {id}")
+        enviar_email_notificacao(dados['email'], assunto, corpo)
+        
+        flash(f"Você assumiu o chamado #{id}!", "success")
+
     except Exception as e:
         print(f"❌ Erro ao assumir chamado: {e}")
         conn.rollback()
@@ -180,36 +257,58 @@ def assumir_chamado(id):
 
     return redirect('/admin')
 
-
 @app.route('/suspender/<int:id>', methods=['POST'])
 def suspender_chamado(id):
     if 'usuario_id' not in session:
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    # CORREÇÃO: Adicionado dictionary=True para poder usar dados['nome']
+    cursor = conn.cursor(dictionary=True) 
     try:
-        # Usando 3 aspas para evitar erros de espaço e quebra de linha
-        sql = """
-            UPDATE chamados
-            SET status = 'Suspenso'
-            WHERE id = %s
-        """
-        cursor.execute(sql, (id,))
-        conn.commit()
-        print(f"⏳ Chamado {id} foi suspenso.")
+        # 1. Busca os dados do cliente
+        cursor.execute('''
+            SELECT c.nome, c.email 
+            FROM chamados ch
+            JOIN clientes c ON ch.cliente_id = c.id
+            WHERE ch.id = %s
+        ''', (id,))
+        dados = cursor.fetchone()
 
-        # *Grava o histórico
-        registrar_log(id, "Suspendeu o chamado e mudou status para Suspenso")
+        if not dados:
+            flash("Chamado não encontrado.", "danger")
+            return redirect('/admin')
+
+        # 2. ATUALIZA O STATUS NO BANCO (Faltava isso no seu script)
+        cursor.execute("UPDATE chamados SET status = 'Suspenso' WHERE id = %s", (id,))
+        conn.commit()
+
+        # 3. Dispara o E-mail
+        assunto = "⏳ Chamado Suspenso - AjudaNoiz"
+        corpo = f"""Olá {dados['nome']}, 👋
+        
+        Passando para avisar que o seu chamado #{id} foi colocado em status de 'Suspenso' pelo técnico {session['usuario_nome']}. ⌛
+
+        Isso geralmente acontece quando precisamos de alguma informação adicional ou aguardamos uma peça/software. 
+
+        Fique tranquilo, assim que retomarmos o atendimento, você será avisado! ⚡"""
+
+        enviar_email_notificacao(dados['email'], assunto, corpo)
+
+        # 4. Grava o histórico (Timeline)
+        registrar_log(id, "Suspendeu o chamado (Status: Suspenso)")
+        
+        flash(f"Chamado #{id} suspenso e cliente notificado.", "warning")
+
     except Exception as e:
         print(f"❌ Erro ao suspender: {e}")
         conn.rollback()
+        flash("Erro ao processar suspensão.", "danger")
     finally:
         cursor.close()
         conn.close()
 
     return redirect('/admin')
-
 
 @app.route('/concluir/<int:id>', methods=['POST'])
 def concluir_chamado(id):
@@ -219,10 +318,21 @@ def concluir_chamado(id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Atualiza o status para 'concluido'
-        sql = "UPDATE chamados SET status = 'Concluído' WHERE id = %s"
-        cursor.execute(sql, (id,))
+        # 1. Busca o e-mail antes de atualizar
+        cursor.execute("SELECT cliente_email, cliente_nome FROM chamados WHERE id = %s", (id,))
+        info = cursor.fetchone()
+        
+        # 2. Atualiza o status
+        cursor.execute("UPDATE chamados SET status = 'Concluído' WHERE id = %s", (id,))
         conn.commit()
+
+        if info:
+            assunto = f"✅ Chamado #{id} Concluído!"
+            corpo = f"""Olá {info[1]}! Seu atendimento foi finalizado com sucesso. 🏁
+    
+                Caso o problema persista ou precise de algo novo, estamos à disposição.
+                Obrigado por confiar na AjudaNoiz! ⚡"""
+            enviar_email_notificacao(info[0], assunto, corpo)
 
         # *Grava o histórico
         registrar_log(id, "Concluiu o chamado e mudou status para Concluído")
@@ -425,43 +535,64 @@ def excluir_cliente(id):
 
 @app.route('/chamado/<int:id>/nota', methods=['POST'])
 def adicionar_nota(id):
-    print(f"DEBUG: Sessão atual: {session}")
     if 'usuario_id' not in session:
         return redirect('/login')
 
     nota = request.form.get('nota')
-    tempo = request.form.get('tempo', 0) # Captura os minutos
+    tempo = request.form.get('tempo', 0)
 
-    # Limita o texto da timeline para não quebrar o layout, 
-    # mas mantém a nota completa na tabela atividades
+    # 1. Preparando o resumo para o histórico
     nota_resumo = nota[:500] + "..." if len(nota) > 500 else nota
     acao_para_historico = f"Nota Técnica ({tempo} min): {nota_resumo}"
-    
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True) # Usamos dictionary para facilitar
     try:
-        # 1. Registra na tabela atividades (onde o tempo é contabilizado)
+        # --- NOVIDADE: BUSCA O E-MAIL E NOME DO CLIENTE ---
+        cursor.execute('''
+            SELECT c.nome, c.email 
+            FROM clientes c 
+            JOIN chamados ch ON c.id = ch.cliente_id 
+            WHERE ch.id = %s
+        ''', (id,))
+        cliente = cursor.fetchone()
+
+        # 2. Registra na tabela ATIVIDADES (Nota completa)
         sql_atv = "INSERT INTO atividades (chamado_id, descricao, tempo_gasto) VALUES (%s, %s, %s)"
         cursor.execute(sql_atv, (id, nota, tempo))
 
-        # 2. Registra na tabela HISTORICO_CHAMADOS (Aqui usamos o RESUMO)
+        # 3. Registra na tabela HISTORICO_CHAMADOS (Resumo)
         sql_hist = "INSERT INTO historico_chamados (chamado_id, usuario_id, acao) VALUES (%s, %s, %s)"
         cursor.execute(sql_hist, (id, session['usuario_id'], acao_para_historico))
-        
+
         conn.commit()
-        flash(f'Atendimento de {tempo} min registrado!', 'success')
+
+        # --- NOVIDADE: DISPARA O E-MAIL SE O CLIENTE FOR ENCONTRADO ---
+        if cliente:
+            assunto = f"🛠️ Atualização no Chamado #{id}"
+            corpo = f"""Olá {cliente['nome']}, 👋
+            
+                Uma nova atualização técnica foi registrada no seu chamado:
+                --------------------------------------------------
+                "{nota_resumo}"
+                --------------------------------------------------
+
+                Tempo investido nesta etapa: {tempo} min.
+                Nossa equipe continua trabalhando na sua solicitação. ⚡"""
+            
+            enviar_email_notificacao(cliente['email'], assunto, corpo)
+
+        flash(f'Atendimento de {tempo} min registrado e e-mail enviado!', 'success')
+
     except Exception as e:
         conn.rollback()
-        import traceback
-        print("Detailed Error:")
-        traceback.print_exc()
-        flash(f"❌ Erro técnico: {e}", "danger")
+        print(f"❌ Erro na nota técnica: {e}")
+        flash(f"Erro técnico: {e}", "danger")
     finally:
         cursor.close()
         conn.close()
-    
-    return redirect(url_for('ver_chamado', id=id))
 
+    return redirect(url_for('ver_chamado', id=id))
 
 @app.route('/admin/usuarios')
 def gerenciar_usuarios():
