@@ -58,7 +58,6 @@ input, select, textarea {
 }
 
 .btn-acao {
-    font-size: 12px;
     border-radius: 4px;
     border: 1px solid #ccc;
     background-color: #28a745;
@@ -66,7 +65,13 @@ input, select, textarea {
     text-decoration: none;
     cursor: pointer;
     box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
-    
+    padding: 5px 10px;
+    height: 32px;
+    white-space: nowrap; /* Impede que o texto do botão quebre */
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+   
 }
 
 .btn-acao:hover {
@@ -77,7 +82,12 @@ input, select, textarea {
     background-color: #ff4d4d;
     color: white;
     border: none;
-    padding: 5px 8px;
+    padding: 5px 10px;
+    height: 32px;
+    white-space: nowrap; /* Impede que o texto do botão quebre */
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
     border-radius: 4px;
     cursor: pointer;
 }
@@ -123,12 +133,12 @@ input, select, textarea {
     vertical-align: middle;
 }
 
+/* Alinhamento horizontal dos botões */
 .acoes-wrapper {
     display: flex;
-    gap: 8px;
-    align-items: center;
+    gap: 5px;
     justify-content: flex-start;
-    min-height: 32px; /* Garante que a célula não "encolha" */
+    align-items: center;
 }
 
 .acoes-wrapper form {
@@ -326,7 +336,7 @@ input, select, textarea {
     margin-bottom: 20px;
 }
 
-.protocolo-badge {
+.chamado-badge {
     background-color: #f0f2f5;
     padding: 10px 20px;
     border-radius: 8px;
@@ -370,4 +380,56 @@ input, select, textarea {
     color: white;
     border-color: #25d366;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* No seu style.css, adicione esta linha junto aos outros alerts */
+.alert-warning { 
+    background-color: #fff3cd; 
+    color: #856404; 
+    border: 1px solid #ffeeba; 
+}
+
+/* Garante que o container de alertas não fique colado no topo */
+.container.mt-2 {
+    margin-top: 20px;
+}
+
+/* Estilo para o ícone de agendamento */
+.info-agendamento {
+    cursor: help;
+    margin-left: 5px;
+    color: #6f42c1;
+    font-size: 0.9em;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap; /* Impede que o texto "Agendado" quebre */
+    padding: 4px 10px;
+    gap: 5px;
+}
+
+/* Cores específicas para o status Agendado */
+.status-Agendado {
+    background-color: #e2d9f3;
+    color: #6f42c1;
+    border: 1px solid #d1c4e9;
+}
+
+/* Garante que a coluna de ações tenha um tamanho mínimo para não esmagar os botões */
+.admin-table td:last-child {
+    min-width: 180px;
+}
+
+/* No seu style.css */
+.status-Agendamento.pendente { /* O navegador converte espaços em pontos ou hifens às vezes, dependendo da classe */
+    background-color: #ffeeba;
+    color: #856404;
+}
+
+/* Garante que a célula de ações não aperte os botões */
+.td-acoes {
+    min-width: 210px; /* Largura suficiente para 2 botões + lixeira */
+    vertical-align: middle !important;
 }

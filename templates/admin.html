@@ -4,15 +4,49 @@
     <meta charset="UTF-8">
     <title>Painel Admin - AjudaNoiz</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Adicionei o FontAwesome para os ícones ficarem coerentes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="admin-body">
+
+    <!-- Nova Barra Superior de Usuário -->
+    <div class="user-header" style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background-color: #2c3e50; color: white; margin-bottom: 20px; border-radius: 0 0 8px 8px;">
+        <div style="margin-right: 20px;">
+            <i class="fas fa-user-circle"></i> Olá, <strong>{{ session['usuario_nome'] }}</strong> 
+            <span style="font-size: 0.8em; opacity: 0.8; margin-left: 5px;">({{ session['usuario_cargo'] }})</span>
+        </div>
+        <a href="{{ url_for('logout') }}" class="btn-excluir" style="text-decoration: none; padding: 5px 15px; font-size: 0.9em; background-color: #e74c3c; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="fas fa-sign-out-alt"></i> Sair
+        </a>
+    </div>
+
+        <!-- Bloco de Mensagens Flash Limpo e Harmonioso -->
+    <div class="container mt-2">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            {# Mapeamos as categorias do Flask para as suas classes CSS #}
+            {% set classe_alerta = 'alert-success' if category in ['success', 'sucesso'] 
+                                    else 'alert-danger' if category == 'danger' 
+                                    else 'alert-warning' %}
+            
+            <div class="alert {{ classe_alerta }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+    </div>
+
     <h1>Painel de Chamados 📋</h1>
     
-<div class="admin-toolbar">
-    <a href="{{ url_for('gerenciar_usuarios') }}" class="btn-toolbar">👥 Gerenciar Equipe</a>
-    <a href="/admin/clientes" class="btn-toolbar">👤 Gerenciar Clientes</a>
-    <a href="/arquivo" class="btn-toolbar">📁 Chamados Arquivados</a>
-</div>
+    <div class="admin-toolbar">
+        {% if session['usuario_cargo'] == 'admin' %}
+            <a href="{{ url_for('gerenciar_usuarios') }}" class="btn-toolbar">👥 Gerenciar Equipe</a>
+        {% endif %}
+        <a href="/admin/clientes" class="btn-toolbar">👤 Gerenciar Clientes</a>
+        <a href="/arquivo" class="btn-toolbar">📁 Chamados Arquivados</a>
+    </div>
 
     <table class="admin-table">
         <thead>
@@ -29,65 +63,91 @@
         </thead>
         <tbody>
             {% for chamado in chamados %}
+     
                 <tr>
-                    <td><a href="{{ url_for('ver_chamado', id=chamado.id) }}" style="text-decoration: none; font-weight: bold; color: #007bff;">
+                    <td>
+                        <a href="{{ url_for('ver_chamado', id=chamado.id) }}" style="text-decoration: none; font-weight: bold; color: #007bff;">
                             #{{ chamado.id }}
-                    </a>
-                </td>
-                <td>{{ chamado.cliente_nome }}</td>
-                <td>{{ chamado.servico_titulo }}</td>
-                <td>{{ chamado.cliente_whatsapp }}</td>
-                <td>{{ chamado.descricao }}</td>
-                <td>{{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
-                <td>
-                    <span class="status-badge status-{{ chamado.status }}">
-                        {{ chamado.status }}
-                    </span>
-                </td>
-                <td>
-                    <div class="acoes-wrapper">
-                        {% if chamado.status|trim == 'Novo' %}
-                            <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
-                                <button type="submit" class="btn-acao" style="background-color: #b8daff;">
-                                    🙋‍♂️ Assumir
+                        </a>
+                    </td>
+                    <td>{{ chamado.cliente_nome }}</td>
+                    <td>{{ chamado.servico_titulo }}</td>
+                    <td>{{ chamado.cliente_whatsapp }}</td>
+                    <td>{{ chamado.descricao }}</td>
+                    <td>{{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                    
+                    <!-- Coluna de Status Unificada -->
+                    <td>
+                        <span class="status-badge status-{{ chamado.status }}" 
+                            {% if chamado.status == 'Agendado' and chamado.data_agendada %} 
+                            title="Agendado para: {{ chamado.data_agendada.strftime('%d/%m/%Y às %H:%M') }}" 
+                            style="cursor: help;"
+                            {% endif %}>
+                            {{ chamado.status }}
+                            {% if chamado.status == 'Agendado' and chamado.data_agendada %}
+                                <i class="fas fa-calendar-alt" style="margin-left: 5px;"></i>
+                            {% endif %}
+                        </span>
+                    </td>
+
+                    <!-- Coluna de Ações -->
+                    <td class="td-acoes">
+                        <div class="acoes-wrapper">
+                            {% if chamado.status|trim == 'Novo' or chamado.status|trim == 'Ag_pendente' %}
+                                <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
+                                    <button type="submit" class="btn-acao" style="background-color: #b8daff; color: #004085;">
+                                        🙋‍♂️ Assumir
+                                    </button>
+                                </form>
+                            {% elif chamado.status|trim == 'Em progresso' or chamado.status|trim == 'Agendado' %}
+                                <form action="{{ url_for('suspender_chamado', id=chamado.id) }}" method="POST">
+                                    <button type="submit" class="btn-acao" style="background-color: #ffeeba; color: #856404;">
+                                        ⏳ Suspender
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('concluir_chamado', id=chamado.id) }}" method="POST">
+                                    <button type="submit" class="btn-acao" style="background-color: #c3e6cb; color: #155724;">
+                                        ✅ Concluir
+                                    </button>
+                                </form> 
+                            {% elif chamado.status|trim == 'Suspenso' %}
+                                <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
+                                    <button type="submit" class="btn-acao" style="background-color: #b8daff; color: #004085;">
+                                        ▶️ Retomar
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST">
+                                <button type="submit" class="btn-excluir" onclick="return confirm('Excluir?')">
+                                    🗑️
                                 </button>
                             </form>
-
-                        {% elif chamado.status|trim == 'Em progresso' %}
-                            <form action="{{ url_for('suspender_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
-                                <button type="submit" class="btn-acao" style="background-color: #ffeeba;">
-                                    ⏳ Suspender
-                                </button>
-                            </form>
-                        
-                            <form action="{{ url_for('concluir_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
-                                <button type="submit" class="btn-acao" style="background-color: #c3e6cb;">
-                                    ✅ Concluir
-                                </button>
-                            </form> 
-
-                        {% elif chamado.status|trim == 'Suspenso' %}
-                            <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
-                                <button type="submit" class="btn-acao" style="background-color: #b8daff;">
-                                    ▶️ Retomar
-                                </button>
-                            </form>
-                        {% endif %}
-
-                        <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST">
-                            <button type="submit" class="btn-excluir" onclick="return confirm('Excluir este chamado?')">
-                                🗑️
-                            </button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
+                        </div>
+                    </td>
+                </tr>
             {% else %}
             <tr>
-                <td colspan="6">Nenhum chamado encontrado.</td>
+                <td colspan="8" style="text-align: center; padding: 20px;">Nenhum chamado encontrado.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+        <!-- Controles de Paginação -->
+    <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+        
+        {% if pagina_atual > 1 %}
+            <a href="{{ url_for('admin', page=pagina_atual - 1) }}" class="btn-toolbar" style="padding: 5px 15px;">⬅️ Anterior</a>
+        {% endif %}
+
+        <span style="font-weight: bold; color: #2c3e50;">
+            Página {{ pagina_atual }} de {{ total_paginas }}
+        </span>
+
+        {% if pagina_atual < total_paginas %}
+            <a href="{{ url_for('admin', page=pagina_atual + 1) }}" class="btn-toolbar" style="padding: 5px 15px;">Próxima ➡️</a>
+        {% endif %}
+
+    </div>
 </body>
 </html>

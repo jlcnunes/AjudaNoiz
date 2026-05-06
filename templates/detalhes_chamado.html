@@ -15,6 +15,9 @@
     <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; color: black;">
         <p><strong>Cliente:</strong> {{ chamado.cliente_nome }}</p>
         <p><strong>Status Atual:</strong> {{ chamado.status }}</p>
+        {% if chamado.status == 'Agendado' and chamado.data_proposta %}
+        <p><strong>📅 Data Agendada:</strong> {{ chamado.data_proposta.strftime('%d/%m/%Y às %H:%M') }}</p>
+        {% endif %}
         <p><strong>Descrição:</strong> {{ chamado.descricao }}</p>
     </div>
 

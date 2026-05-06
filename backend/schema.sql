@@ -33,11 +33,13 @@ CREATE TABLE IF NOT EXISTS chamados(
     descricao TEXT NOT NULL,
     tecnico_id INT NULL,
     ativo TINYINT(1) DEFAULT 1,
-    status ENUM('Novo', 'Em progresso', 'Suspenso', 'Concluído', 'Cancelado') DEFAULT 'Novo',
+    status ENUM('Novo', 'Em progresso', 'Agendado', 'Ag_pendente', 'Suspenso', 'Concluído', 'Cancelado') DEFAULT 'Novo',
     data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     data_exclusao DATETIME NULL,
     FOREIGN KEY (tecnico_id) REFERENCES usuarios(id),
-    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+    deseja_agendar VARCHAR(3) DEFAULT 'NÃO',
+    data_proposta DATETIME NULL
 );
 
 -- 5. Atividades e Histórico (Netas - Dependem de Chamados e Usuários)
@@ -58,4 +60,17 @@ CREATE TABLE IF NOT EXISTS historico_chamados (
     data_acao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (chamado_id) REFERENCES chamados(id) ON DELETE CASCADE,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
+
+-- 6. Cria a tabela de agendamentos confirmados
+CREATE TABLE IF NOT EXISTS agendamentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    chamado_id INT NOT NULL,
+    tecnico_id INT NOT NULL,
+    data_hora DATETIME NOT NULL,
+    status VARCHAR(20) DEFAULT 'Confirmado',
+    FOREIGN KEY (chamado_id) REFERENCES chamados(id),
+    FOREIGN KEY (tecnico_id) REFERENCES usuarios(id),
+    -- Garante que um técnico não tenha dois agendamentos no mesmo horário
+    UNIQUE KEY tecnico_horario (tecnico_id, data_hora) 
 );

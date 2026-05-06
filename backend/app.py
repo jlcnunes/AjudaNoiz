@@ -3,8 +3,7 @@ from database import inicializar_banco, executar_autoteste, get_db_connection
 from flask import session, flash, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
-
-from flask_mail import Mail, Message  # Adicione no topo
+from datetime import datetime, timedelta
 
 
 app = Flask(__name__,
@@ -35,6 +34,28 @@ def enviar_email_notificacao(destinatario, assunto, corpo_texto):
         print(f"⚠️ Falha ao enviar notificação: {e}")
 
 
+def eh_dia_util(data):
+    # 0 = Segunda, 4 = Sexta. 5 e 6 são Sábado/Domingo.
+    if data.weekday() > 4:
+        return False
+    # Lista básica de feriados fixos (Pode ser expandida)
+    feriados = ['01-01', '21-04', '01-05', '07-09', '12-10', '02-11', '15-11', '25-12']
+    return data.strftime('%d-%m') not in feriados
+
+
+def verificar_disponibilidade_tecnico(tecnico_id, data_hora):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id FROM agendamentos 
+        WHERE tecnico_id = %s AND data_hora = %s AND status = 'Confirmado'
+    ''', (tecnico_id, data_hora))
+    conflito = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return conflito is None
+
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -49,48 +70,63 @@ def enviar():
     whatsapp = request.form.get('whatsapp')
     servico = request.form.get('servico')
     descricao = request.form.get('descricao')
+    deseja_agendar = request.form.get('deseja_agendar') # 'SIM' ou 'NÃO'
+    data_proposta = request.form.get('data_proposta') # Vem do seu input hidden
 
+    # --- LÓGICA DE STATUS AUTOMÁTICO ---
+    # Se o cliente escolheu "SIM" e forneceu uma data, o status é "Agendado".
+    # Caso contrário, o status padrão é "Novo".
+    status_inicial = 'Novo'
+    if deseja_agendar == 'SIM' and data_proposta:
+        status_inicial = 'Ag_pendente'
+        print(f"💥 O status inicial é: {status_inicial}")
+    else:
+        data_proposta = None
+    
     # * 2. Salvar no Banco de Dados
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
-        cursor.execute('SELECT id, nome, whatsapp FROM clientes WHERE email = %s', (email,))
+        # Lógica de Cliente (Mantida do seu original)
+        cursor.execute('SELECT id FROM clientes WHERE email = %s', (email,))
         cliente_existente = cursor.fetchone()
-
         if cliente_existente:
             cliente_id = cliente_existente['id']
             cursor.execute('UPDATE clientes SET ativo = 1 WHERE id = %s', (cliente_id,))
-
-            if cliente_existente['whatsapp'] != whatsapp or cliente_existente['nome'] != nome:
-                sql_update = "UPDATE clientes SET nome = %s, whatsapp = %s WHERE id = %s"
-                cursor.execute(sql_update, (nome, whatsapp, cliente_id))
-                print(f"🔄 Dados do cliente {cliente_id} atualizados (WhatsApp/Nome).")
-
         else:
-            sql_novo_cliente = "INSERT INTO clientes (nome, email, whatsapp) VALUES (%s, %s, %s)"
-            cursor.execute(sql_novo_cliente, (nome, email, whatsapp))
+            cursor.execute("INSERT INTO clientes (nome, email, whatsapp) VALUES (%s, %s, %s)", (nome, email, whatsapp))
             cliente_id = cursor.lastrowid
-            print(f"✨ Novo cliente cadastrado com ID: {cliente_id}")
 
+        # INSERT com o status "Agendamento Pendente" ou "Novo"
         sql_chamado = """
-            INSERT INTO chamados (cliente_id, cliente_nome, cliente_email,
-            cliente_whatsapp, servico_titulo, descricao)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO chamados (cliente_id, cliente_nome, cliente_email, cliente_whatsapp,
+            servico_titulo, descricao, deseja_agendar, data_proposta, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(sql_chamado, (cliente_id, nome, email, whatsapp, servico, descricao))
-        protocolo = cursor.lastrowid 
-
+        cursor.execute(sql_chamado, (
+            cliente_id, nome, email, whatsapp, servico, 
+            descricao, deseja_agendar, data_proposta, status_inicial
+        ))
+        
+        chamado_id = cursor.lastrowid
         conn.commit()
 
+        # * 3. Envio de Notificação por E-mail
         try:
-            assunto_email = f"🚀 Protocolo de Atendimento: #{protocolo}"
+            texto_agendamento = ""
+            if status_inicial == 'Agendado':
+                # Converte a string da data para um formato bonito no e-mail
+                dt = datetime.strptime(data_proposta, '%Y-%m-%dT%H:%M')
+                texto_agendamento = f"\n📅 Seu pré-agendamento foi solicitado para: {dt.strftime('%d/%m/%Y às %H:%M')}\n"
+
+            assunto_email = f"🚀 Chamado #{chamado_id} Recebido"
             corpo_email = f"""Olá {nome}, tudo bem? 👋
         
-                Passando para avisar que o seu chamado já caiu aqui no nosso sistema! 📥
-                🆔 Protocolo: #{protocolo}
+                Recebemos sua solicitação!
+                🆔 Chamado: #{chamado_id}
                 🔧 Serviço: {servico}
-
+                {texto_agendamento}
                 Nossa equipe técnica já foi alertada e em breve entraremos em contato. 👨‍💻
                 Equipe AjudaNoiz ⚡"""
         
@@ -99,40 +135,60 @@ def enviar():
         except Exception as e_mail:
             print(f"⚠️ Erro ao enviar e-mail: {e_mail}")
 
-        return render_template('sucesso.html', chamado_id=protocolo)
+        return render_template('sucesso.html', chamado_id=chamado_id)
 
     except Exception as e:
         print(f"❌ Erro ao processar envio: {e}")
         conn.rollback()
-        return f"Erro{e}"
+        return f"Erro: {e}"
     finally:
         cursor.close()
         conn.close()
-
 
 @app.route('/admin')
 def admin():
     if 'usuario_id' not in session:
         return redirect('/login')
+    
+    # Define o limite por página
+    LIMITE = 10 
+    # Pega a página atual da URL, padrão é 1
+    pagina = request.args.get('page', 1, type=int)
+    offset = (pagina - 1) * LIMITE
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    # *diconary=True facilita o uso no HTML
 
     try:
-        cursor.execute(
-            "SELECT * FROM chamados "
-            "WHERE ativo = 1 AND data_exclusao "
-            "IS NULL ORDER BY data_criacao DESC"
-            )
+        # 1. Conta o total de chamados para saber quantas páginas existem
+        cursor.execute("SELECT COUNT(*) as total FROM chamados WHERE ativo = 1 AND data_exclusao IS NULL")
+        total_chamados = cursor.fetchone()['total']
+        total_paginas = (total_chamados + LIMITE - 1) // LIMITE
+
+        # 2. Busca apenas os chamados daquela página específica
+        sql = """
+            SELECT ch.*, ag.data_hora as data_agendada
+            FROM chamados ch
+            LEFT JOIN agendamentos ag ON ch.id = ag.chamado_id
+            WHERE ch.ativo = 1 AND ch.data_exclusao IS NULL 
+            ORDER BY ch.data_criacao DESC 
+            LIMIT %s OFFSET %s
+        """
+        cursor.execute(sql, (LIMITE, offset))
         chamados = cursor.fetchall()
+        
     except Exception as e:
-        print(f"❌ Erro ao listar chamados: {e}")
+        print(f"❌ Erro na paginação: {e}")
         chamados = []
+        total_paginas = 1
     finally:
         cursor.close()
         conn.close()
 
-    return render_template('admin.html', chamados=chamados)
+    return render_template('admin.html', 
+                           chamados=chamados, 
+                           pagina_atual=pagina, 
+                           total_paginas=total_paginas)
 
 
 def registrar_log(chamado_id, acao):
@@ -163,7 +219,7 @@ def excluir(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        # 1. Busca os dados do cliente ANTES de deletar o chamado
+        # 1. Busca os dados do cliente ANTES de desativar
         cursor.execute('''
             SELECT c.nome, c.email 
             FROM chamados ch
@@ -172,16 +228,25 @@ def excluir(id):
         ''', (id,))
         dados = cursor.fetchone()
 
-        # 2. Executa a exclusão no banco
-        cursor.execute("DELETE FROM chamados WHERE id = %s", (id,))
+        # 2. Em vez de DELETE, fazemos UPDATE (Soft Delete)
+        from datetime import datetime
+        agora = datetime.now()
+        
+        # Define ativo = 0 e preenche a data de exclusão para o /arquivo
+        cursor.execute('''
+            UPDATE chamados 
+            SET ativo = 0, data_exclusao = %s 
+            WHERE id = %s
+        ''', (agora, id))
+        
         conn.commit()
 
-        # 3. Se o chamado existia, envia a notificação de cancelamento
+        # 3. Notifica o cliente sobre o cancelamento/arquivamento
         if dados:
-            assunto = f"❌ Chamado #{id} Cancelado/Excluído"
+            assunto = f"❌ Chamado #{id}: Cancelado/Excluído."
             corpo = f"""Olá {dados['nome']},
             
-            Informamos que o seu chamado de protocolo #{id} foi removido do nosso sistema.
+            Informamos que o seu chamado número #{id} foi removido do nosso painel de atendimento ativo.
 
             Se isso foi um erro ou se você ainda precisa de suporte, por favor, abra uma nova solicitação em nosso site.
 
@@ -190,30 +255,36 @@ def excluir(id):
             
             enviar_email_notificacao(dados['email'], assunto, corpo)
 
-        flash(f"Chamado #{id} excluído com sucesso!", "success")
+        # 4. Registra no histórico que foi arquivado
+        registrar_log(id, "Chamado arquivado/excluído do painel principal")
+        
+        flash(f"Chamado #{id} movido para o arquivo com sucesso!", "success")
         
     except Exception as e:
         conn.rollback()
-        print(f"❌ Erro ao deletar: {e}")
-        flash("Erro ao excluir chamado. Ele pode ter históricos vinculados.", "danger")
+        print(f"❌ Erro ao arquivar: {e}")
+        flash("Erro ao processar a exclusão.", "danger")
     finally:
         cursor.close()
         conn.close()
 
     return redirect('/admin')
 
+
 @app.route('/assumir/<int:id>', methods=['POST'])
 def assumir_chamado(id):
     if 'usuario_id' not in session:
         return redirect('/login')
 
+    tecnico_id = session['usuario_id']
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # 1. Busca dados do cliente E o status atual do chamado
+        # 1. Busca dados do chamado, cliente e se já existe agendamento
         cursor.execute('''
-            SELECT c.nome, c.email, ch.status 
+            SELECT c.nome, c.email, ch.status, ch.deseja_agendar, ch.data_proposta,
+                   (SELECT COUNT(*) FROM agendamentos ag WHERE chamado_id = ch.id) as ja_agendado
             FROM chamados ch
             JOIN clientes c ON ch.cliente_id = c.id
             WHERE ch.id = %s
@@ -224,33 +295,50 @@ def assumir_chamado(id):
             flash("Chamado não encontrado.", "danger")
             return redirect('/admin')
 
-        # 2. Define a mensagem de log e e-mail baseada no status anterior
-        status_anterior = dados['status'].strip() if dados['status'] else ""
-        
-        if status_anterior == 'Suspenso':
-            mensagem_log = "Retomou o atendimento (estava suspenso)"
-            assunto = "🚀 Atendimento Retomado"
-            corpo = f"Olá {dados['nome']}, o técnico {session['usuario_nome']} retomou o seu atendimento agora mesmo! ⚡"
+        # Inicializa a variável para evitar o erro de "not defined"
+        status_final = 'Em progresso' 
 
-        else:
-            mensagem_log = "Assumiu o chamado e iniciou o atendimento"
-            assunto = "👨‍💻 Técnico Atribuído"
-            corpo = f"Olá {dados['nome']}, o técnico {session['usuario_nome']} já assumiu seu chamado e iniciou o diagnóstico! 🚀"
+        # --- LÓGICA DE AGENDAMENTO ---
+        # Se já foi agendado antes ou se é um novo pedido de agendamento[cite: 12, 13]
+        if dados['ja_agendado'] > 0 or (dados['deseja_agendar'] == 'SIM' and dados['data_proposta']):
+            status_final = 'Agendado'
+            
+            # Se é a primeira vez assumindo e não está na tabela de agendamentos, insere[cite: 13]
+            if dados['ja_agendado'] == 0:
+                data_hora = dados['data_proposta']
+                if not verificar_disponibilidade_tecnico(tecnico_id, data_hora):
+                    flash(f"❌ Conflito: Você já tem compromisso para este horário.", "danger")
+                    return redirect('/admin')
+                
+                cursor.execute("INSERT INTO agendamentos (chamado_id, tecnico_id, data_hora) VALUES (%s, %s, %s)",
+                               (id, tecnico_id, data_hora))
 
-        # 3. Atualiza o banco
-        cursor.execute("UPDATE chamados SET tecnico_id = %s, status = 'Em progresso' WHERE id = %s", 
-                    (session['usuario_id'], id))
+        # 2. Atualiza o chamado no banco
+        cursor.execute("UPDATE chamados SET tecnico_id = %s, status = %s WHERE id = %s", 
+                    (tecnico_id, status_final, id))
         conn.commit()
         
-        # 4. Registra log e envia e-mail
-        registrar_log(id, mensagem_log)
+        # 3. Preparação e envio do e-mail[cite: 12]
+        if status_final == 'Agendado':
+            assunto = f"📅 Chamado #{id}: Agendamento Confirmado."
+            data_f = dados['data_proposta'].strftime('%d/%m/%Y às %H:%M')
+            corpo = f"Olá {dados['nome']},\n\nSeu agendamento para o chamado #{id} foi confirmado para {data_f}.\n\nTécnico: {session['usuario_nome']}\n\nEquipe AjudaNoiz ⚡"
+        else:
+            assunto = f"👨‍💻 Chamado #{id}: Técnico Atribuído."
+            corpo = f"Olá {dados['nome']}, o técnico {session['usuario_nome']} assumiu seu chamado e já está trabalhando nele! 🚀"
+
         enviar_email_notificacao(dados['email'], assunto, corpo)
         
-        flash(f"Você assumiu o chamado #{id}!", "success")
+        # 4. Log e Feedback[cite: 12]
+        texto_log = "Retomou" if dados['status'] == 'Suspenso' else "Assumiu"
+        registrar_log(id, f"{texto_log} o chamado (Status: {status_final})")
+        
+        flash(f"Chamado #{id} alterado para {status_final}!", "success")
 
     except Exception as e:
-        print(f"❌ Erro ao assumir chamado: {e}")
+        print(f"❌ Erro ao assumir/retomar: {e}")
         conn.rollback()
+        flash("Erro ao processar a operação.", "danger")
     finally:
         cursor.close()
         conn.close()
@@ -284,7 +372,7 @@ def suspender_chamado(id):
         conn.commit()
 
         # 3. Dispara o E-mail
-        assunto = "⏳ Chamado Suspenso - AjudaNoiz"
+        assunto = f"⏳ Chamado #{id}: Suspenso."
         corpo = f"""Olá {dados['nome']}, 👋
         
         Passando para avisar que o seu chamado #{id} foi colocado em status de 'Suspenso' pelo técnico {session['usuario_nome']}. ⌛
@@ -327,7 +415,7 @@ def concluir_chamado(id):
         conn.commit()
 
         if info:
-            assunto = f"✅ Chamado #{id} Concluído!"
+            assunto = f"✅ Chamado #{id}: Chamado Concluído."
             corpo = f"""Olá {info[1]}! Seu atendimento foi finalizado com sucesso. 🏁
     
                 Caso o problema persista ou precise de algo novo, estamos à disposição.
@@ -569,7 +657,7 @@ def adicionar_nota(id):
 
         # --- NOVIDADE: DISPARA O E-MAIL SE O CLIENTE FOR ENCONTRADO ---
         if cliente:
-            assunto = f"🛠️ Atualização no Chamado #{id}"
+            assunto = f"🛠️ Chamado #{id}: Nova atualização"
             corpo = f"""Olá {cliente['nome']}, 👋
             
                 Uma nova atualização técnica foi registrada no seu chamado:
