@@ -1,5 +1,11 @@
 {% extends "admin.html" %} <!-- Ou o seu layout padrão -->
 {% block content %}
+<div class="admin-toolbar">
+        {% if session['usuario_cargo'] == 'admin' %}
+            <a href="{{ url_for('admin') }}" class="btn-toolbar">⬅ Painel de Chamados</a>
+        {% endif %}        
+</div>
+
 <div class="admin-card" style="max-width: 600px; margin: 50px auto;">
     <h2><i class="fas fa-cogs"></i> Configurações do Sistema</h2>
     <hr>

@@ -179,7 +179,8 @@ def admin():
     try:
         # 1. Conta o total de chamados para saber quantas páginas existem
         cursor.execute("SELECT COUNT(*) as total FROM chamados WHERE ativo = 1 AND data_exclusao IS NULL")
-        total_chamados = cursor.fetchone()['total']
+        res_total = cursor.fetchone()
+        total_chamados = int(res_total['total']) if res_total else 0
         total_paginas = (total_chamados + LIMITE - 1) // LIMITE
 
         # 2. Busca apenas os chamados daquela página específica
@@ -783,7 +784,9 @@ def exibir_configuracoes():
     # Busca o valor atual para exibir no formulário
     from utilitarios import obter_valor_hora # Vamos adicionar essa no utilitarios.py
     valor = obter_valor_hora()
-    return render_template('configuracoes.html', valor_hora=valor)
+    return render_template('configuracoes.html', 
+                           valor_hora=valor, 
+                           pagina_atual='configuracoes')
 
 
 @app.route('/admin/configuracoes/salvar', methods=['POST'])
@@ -804,7 +807,8 @@ def salvar_configuracoes():
     conn.close()
     
     flash("Configurações atualizadas com sucesso!", "success")
-    return redirect('/admin/configuracoes')
+    # Redireciona para a rota de exibição que acabamos de corrigir
+    return redirect(url_for('exibir_configuracoes'))
 
 
 @app.route('/admin/usuarios')

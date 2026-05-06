@@ -38,11 +38,13 @@
         {% endwith %}
     </div>
 
+    {% block content %}
     <h1>Painel de Chamados 📋</h1>
     
     <div class="admin-toolbar">
         {% if session['usuario_cargo'] == 'admin' %}
             <a href="{{ url_for('gerenciar_usuarios') }}" class="btn-toolbar">👥 Gerenciar Equipe</a>
+            <a href="{{ url_for('exibir_configuracoes') }}" class="btn-toolbar"> ⚙ Exibir Configurações</a>
         {% endif %}
         <a href="/admin/clientes" class="btn-toolbar">👤 Gerenciar Clientes</a>
         <a href="/arquivo" class="btn-toolbar">📁 Chamados Arquivados</a>
@@ -142,20 +144,21 @@
         </tbody>
     </table>
         <!-- Controles de Paginação -->
+    {% if total_paginas is defined %}
     <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: center; gap: 10px; align-items: center;">
-        
-        {% if pagina_atual > 1 %}
+        {% if pagina_atual|int > 1 %}
             <a href="{{ url_for('admin', page=pagina_atual - 1) }}" class="btn-toolbar" style="padding: 5px 15px;">⬅️ Anterior</a>
         {% endif %}
 
         <span style="font-weight: bold; color: #2c3e50;">
-            Página {{ pagina_atual }} de {{ total_paginas }}
+            Página {{ pagina_atual|int }} de {{ total_paginas|int }}
         </span>
 
-        {% if pagina_atual < total_paginas %}
+        {% if pagina_atual|int < total_paginas|int %}
             <a href="{{ url_for('admin', page=pagina_atual + 1) }}" class="btn-toolbar" style="padding: 5px 15px;">Próxima ➡️</a>
         {% endif %}
-
     </div>
+    {% endif %}
+    {% endblock %}
 </body>
 </html>
