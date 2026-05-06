@@ -36,3 +36,10 @@ O AjudaNoiz é um projeto criado por José Nunes que se propõe a aplicar seus 2
 - Back-end: Python/flask. 
 - Banco de dados: MySQL.
 
+# Instalação:
+
+- Instalar as dependências via pip install -r requirements.txt.
+
+- Baixar e instalar o wkhtmltopdf.
+
+- Certificar-se de que o caminho no app.py (C:\Program Files\wkhtmltopdf\...) aponta para o local correto da instalação no novo ambiente.
