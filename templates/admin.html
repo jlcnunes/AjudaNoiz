@@ -123,6 +123,14 @@
                                     🗑️
                                 </button>
                             </form>
+                            {% if chamado.status|trim == 'Concluído' %}
+                                <a href="{{ url_for('enviar_fatura_email', id=chamado.id) }}" 
+                                title="Enviar Fatura por E-mail" 
+                                style="color: #2c3e50; font-size: 1.2rem; margin-left: 10px; text-decoration: none;"
+                                onclick="return confirm('Gerar e enviar fatura para o cliente?')">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

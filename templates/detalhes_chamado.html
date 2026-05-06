@@ -12,6 +12,27 @@
         ⏱️ Tempo Total Investido: {{ tempo_total }}
     </div>
 
+        <!-- Seção de Ações Financeiras -->
+    <div class="admin-card" style="border-left: 5px solid #2c3e50; margin-top: 20px;">
+        <h3><i class="fas fa-file-invoice-dollar"></i> Faturamento</h3>
+        <p>O valor total acumulado até agora é baseado nas notas técnicas registradas.</p>
+        
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <!-- Botão para Visualizar (abre em nova aba) -->
+            <a href="{{ url_for('preparar_fatura', id=chamado.id) }}" target="_blank" class="btn-toolbar" style="background-color: #f8f9fa;">
+                <i class="fas fa-eye"></i> Visualizar Fatura
+            </a>
+
+            <!-- Botão para Enviar por E-mail -->
+            <a href="{{ url_for('enviar_fatura_email', id=chamado.id) }}" 
+            class="btn-toolbar" 
+            style="background-color: #25d366; color: white; border-color: #128c7e;"
+            onclick="return confirm('Deseja gerar o PDF e enviar agora para o e-mail do cliente?')">
+                <i class="fas fa-paper-plane"></i> Gerar e Enviar PDF
+            </a>
+        </div>
+    </div>
+
     <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; color: black;">
         <p><strong>Cliente:</strong> {{ chamado.cliente_nome }}</p>
         <p><strong>Status Atual:</strong> {{ chamado.status }}</p>

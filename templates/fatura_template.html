@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; margin: 40px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #25d366; padding-bottom: 20px; }
+        .logo { color: #2c3e50; font-size: 24px; font-weight: bold; }
+        .fatura-titulo { text-align: right; color: #666; }
+        .info-secao { margin-top: 30px; display: flex; justify-content: space-between; }
+        .tabela-fatura { width: 100%; border-collapse: collapse; margin-top: 30px; }
+        .tabela-fatura th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; padding: 12px; text-align: left; }
+        .tabela-fatura td { padding: 12px; border-bottom: 1px solid #eee; }
+        .total-container { margin-top: 30px; text-align: right; font-size: 1.2em; }
+        .footer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">AjudaNoiz <span style="color: #25d366;">TI</span></div>
+        <div class="fatura-titulo">
+            <strong>FATURA #{{ chamado.id }}</strong><br>
+            Data: {{ data_atual if data_atual else 'N/A' }}
+        </div>
+    </div>
+
+    <div class="info-secao">
+        <div>
+            <strong>CLIENTE:</strong><br>
+            {{ chamado.nome }}<br>
+            {{ chamado.email }}<br>
+            {{ chamado.whatsapp }}
+        </div>
+        <div style="text-align: right;">
+            <strong>SERVIÇO:</strong><br>
+            {{ chamado.servico_titulo }}<br>
+            Aberto em: {{ chamado.data_criacao.strftime('%d/%m/%Y') }}
+        </div>
+    </div>
+
+    <table class="tabela-fatura">
+        <thead>
+            <tr>
+                <th>Descrição do Serviço</th>
+                <th>Tempo Total</th>
+                <th>Valor/Hora</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Atendimento Técnico Especializado</td>
+                <td>{{ financeiro.tempo_total | brl }} horas</td>
+                <td>R$ {{ financeiro.valor_hora | brl }}</td>
+                <td><strong>R$ {{ financeiro.subtotal | default(0) | brl }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="total-container">
+        <p>Total de Minutos: {{ financeiro.minutos_totais | brl }} min</p>
+        <p style="font-size: 1.5em; color: #2c3e50;"><strong>TOTAL: R$ {{ financeiro.valor_total | brl }}</strong></p>
+    </div>
+
+    <div class="footer">
+        <p>AjudaNoiz TI - Soluções em Tecnologia</p>
+        <p>Este documento é uma fatura proforma gerada automaticamente pelo sistema.</p>
+    </div>
+</body>
+</html>

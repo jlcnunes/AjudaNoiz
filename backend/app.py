@@ -1,10 +1,11 @@
 from flask import Flask, render_template, request, redirect
 from database import inicializar_banco, executar_autoteste, get_db_connection
-from flask import session, flash, url_for
+from flask import session, flash, url_for, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 from datetime import datetime, timedelta
-
+from utilitarios import calcular_total_fatura
+import pdfkit
 
 app = Flask(__name__,
             template_folder='../templates',
@@ -12,7 +13,15 @@ app = Flask(__name__,
 
 app.secret_key = "N3v3rM3ssTh@tSh1tB0y"
 
+@app.template_filter('brl')
+def brl_filter(valor):
+    try:
+        float_valor = float(valor) # Garante que é um número
+        return f"{float_valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    except (ValueError, TypeError):
+        return valor # Se não for número, retorna o que era antes
 
+        
 # Configurações do Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -55,6 +64,14 @@ def verificar_disponibilidade_tecnico(tecnico_id, data_hora):
     conn.close()
     return conflito is None
 
+def obter_valor_hora():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT valor FROM configuracoes WHERE chave = 'valor_hora_tecnica'")
+    res = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return float(res['valor']) if res else 150.00 # Retorna 150.00 se não achar no banco
 
 @app.route('/')
 def home():
@@ -681,6 +698,114 @@ def adicionar_nota(id):
         conn.close()
 
     return redirect(url_for('ver_chamado', id=id))
+
+
+@app.route('/admin/chamado/<int:id>/fatura')
+def preparar_fatura(id):
+    # 1. Busca os detalhes do chamado e do cliente para o cabeçalho da fatura
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute('''
+        SELECT ch.id, ch.servico_titulo, ch.data_criacao, c.nome, c.email, c.whatsapp 
+        FROM chamados ch 
+        JOIN clientes c ON ch.cliente_id = c.id 
+        WHERE ch.id = %s
+    ''', (id,))
+    chamado = cursor.fetchone()
+    
+    cursor.close()
+    conn.close()
+
+    if not chamado:
+        flash("Chamado não encontrado para gerar fatura.", "danger")
+        return redirect('/admin')
+
+    # 2. Usa a função do utilitarios.py para os cálculos financeiros
+    financeiro = calcular_total_fatura(id)
+
+    # 3. Aviso o usuário que não foipossível calcula a fatura.
+    if not financeiro:
+        flash("Não foi possível calcular a fatura. Certifique-se de que existem notas técnicas com tempo registrado.", "warning")
+        return redirect(f'/admin/chamado/{id}')
+
+    # 4 Renderiza o template que será transformado em PDF
+    return render_template('fatura_template.html', chamado=chamado, financeiro=financeiro, data_atual=datetime.now().strftime('%d/%m/%Y'))
+
+
+@app.route('/admin/chamado/<int:id>/enviar_fatura')
+def enviar_fatura_email(id):
+    # 1. Coleta os dados (Lógica similar à que discutimos antes)
+    from utilitarios import calcular_total_fatura
+    financeiro = calcular_total_fatura(id)
+    
+    # Busca dados do cliente (ID, nome, email)
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+    SELECT ch.id, ch.servico_titulo, ch.data_criacao, c.nome, c.email, c.whatsapp 
+        FROM chamados ch 
+        JOIN clientes c ON ch.cliente_id = c.id 
+        WHERE ch.id = %s
+    """, (id,))
+    cliente = cursor.fetchone()
+    
+    # 2. Gera o HTML do PDF
+    html_fatura = render_template('fatura_template.html', 
+                                 chamado=cliente, 
+                                 financeiro=financeiro, 
+                                 data_atual=datetime.now().strftime('%d/%m/%Y'))
+
+    # 3. Converte HTML para PDF
+    path_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+    config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
+    pdf = pdfkit.from_string(html_fatura, False, configuration=config)
+
+    # 4. Cria e envia o E-mail
+    msg = Message(f"Fatura do Atendimento #{id} - AjudaNoiz TI",
+                  recipients=[cliente['email']])
+    msg.body = f"Olá {cliente['nome']},\n\nSegue em anexo a fatura referente ao seu atendimento técnico.\n\nTotal: R$ {financeiro['valor_total']}"
+    
+    # Anexa o PDF (nome do arquivo, tipo mime, conteúdo)
+    msg.attach(f"fatura_ajudanoiz_{id}.pdf", "application/pdf", pdf)
+    
+    try:
+        mail.send(msg)
+        flash(f"Fatura enviada com sucesso para {cliente['email']}!", "success")
+    except Exception as e:
+        flash(f"Erro ao enviar e-mail: {str(e)}", "danger")
+
+    return redirect(f'/chamado/{id}')
+
+
+@app.route('/admin/configuracoes')
+def exibir_configuracoes():
+    # Busca o valor atual para exibir no formulário
+    from utilitarios import obter_valor_hora # Vamos adicionar essa no utilitarios.py
+    valor = obter_valor_hora()
+    return render_template('configuracoes.html', valor_hora=valor)
+
+
+@app.route('/admin/configuracoes/salvar', methods=['POST'])
+def salvar_configuracoes():
+    novo_valor = request.form.get('valor_hora')
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Atualiza ou insere a chave de configuração
+    cursor.execute("""
+        INSERT INTO configuracoes (chave, valor) 
+        VALUES ('valor_hora_tecnica', %s)
+        ON DUPLICATE KEY UPDATE valor = %s
+    """, (novo_valor, novo_valor))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    flash("Configurações atualizadas com sucesso!", "success")
+    return redirect('/admin/configuracoes')
+
 
 @app.route('/admin/usuarios')
 def gerenciar_usuarios():

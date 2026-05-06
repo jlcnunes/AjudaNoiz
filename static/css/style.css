@@ -433,3 +433,16 @@ input, select, textarea {
     min-width: 210px; /* Largura suficiente para 2 botões + lixeira */
     vertical-align: middle !important;
 }
+
+/* Botão de envio de fatura com efeito de hover suave */
+.btn-toolbar[style*="background-color: #25d366"]:hover {
+    background-color: #128c7e !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+}
+
+/* Estilo para o container de faturamento nos detalhes */
+.admin-card h3 i {
+    color: #25d366;
+    margin-right: 8px;
+}

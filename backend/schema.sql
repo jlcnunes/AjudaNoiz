@@ -74,3 +74,8 @@ CREATE TABLE IF NOT EXISTS agendamentos (
     -- Garante que um técnico não tenha dois agendamentos no mesmo horário
     UNIQUE KEY tecnico_horario (tecnico_id, data_hora) 
 );
+
+CREATE TABLE IF NOT EXISTS configuracoes (
+    chave VARCHAR(50) PRIMARY KEY,
+    valor VARCHAR(255) NOT NULL
+);
