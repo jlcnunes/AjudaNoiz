@@ -1,168 +1,184 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-    <head>
-        <meta charset="UTF-8"> <!-- Corrigido: era chaset -->
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Corrigido: era viewerport -->
-        <title>AjudaNoiz - Suporte Humanizado</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    </head>
-    <body>
-        <h1>Solicitar Ajuda 🛠️</h1>
-        <p>Preencha os dados abaixo e um técnico entrará em contato.</p>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AjudaNoiz - Solicitar Suporte</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="client-body">
+
+    <div class="client-card">
+        <div class="header-logo">
+            <h1>AjudaNoiz 🛠️</h1>
+            <p>Suporte técnico rápido e humanizado</p>
+        </div>
 
         <form action="/enviar" method="POST">
+            <div class="form-section-title">Seus Dados</div>
+            
             <div class="form-group">
                 <label for="nome">Nome Completo:</label>
-                <input type="text" id="nome" name="nome" required>
+                <input type="text" id="nome" name="nome" placeholder="Como devemos te chamar?" required>
             </div>
 
-            <div class="form-group">
-                <label for="email">E-mail:</label>
-                <input type="email" id="email" name="email" placeholder="exemplo@dominio.com" required>
-            </div>
-
-            <div class="form-group">
-                <label for="whatsapp">WhatsApp:</label>
-                <input type="tel" 
-                    id="whatsapp" 
-                    name="whatsapp" 
-                    placeholder="(00) 00000-0000" 
-                    required 
-                    pattern="\(\d{2}\)\s\d{5}-\d{4}" 
-                    title="Formato esperado: (00) 00000-0000">
-            </div>
-
-            <div class="form-group">
-                <label>Deseja agendar o atendimento?</label>
-                <select name="deseja_agendar" id="deseja_agendar" onchange="toggleCalendario()">
-                    <option value="NÃO">NÃO</option>
-                    <option value="SIM">SIM</option>
-                </select>
-            </div>
-
-            <!-- NOVA ESTRUTURA PARA GARANTIR HORAS CHEIAS -->
-            <div id="campo_calendario" style="display:none; margin-top: 15px; border: 1px dashed #ccc; padding: 10px;">
+            <div class="grid-2-col">
                 <div class="form-group">
-                    <label for="data_dia">Escolha a data:</label>
-                    <input type="date" id="data_dia" onchange="atualizarDataFinal()">
+                    <label for="email">E-mail:</label>
+                    <input type="email" id="email" name="email" placeholder="Para a fatura" required>
                 </div>
-
-                <div class="form-group" style="margin-top: 10px;">
-                    <label for="hora_cheia">Escolha o horário:</label>
-                    <select id="hora_cheia" onchange="atualizarDataFinal()">
-                        <option value="08:00">08:00</option>
-                        <option value="09:00">09:00</option>
-                        <option value="10:00">10:00</option>
-                        <option value="11:00">11:00</option>
-                        <option value="12:00">12:00</option>
-                        <option value="13:00">13:00</option>
-                        <option value="14:00">14:00</option>
-                        <option value="15:00">15:00</option>
-                        <option value="16:00">16:00</option>
-                        <option value="17:00">17:00</option>
-                        <option value="18:00">18:00</option>
-                    </select>
+                <div class="form-group">
+                    <label for="whatsapp">WhatsApp:</label>
+                    <input type="tel" id="whatsapp" name="whatsapp" placeholder="(00) 00000-0000" required 
+                           maxlength="15" pattern="\(\d{2}\)\s\d{5}-\d{4}">
                 </div>
-                <!-- Este input oculto envia o valor para o Flask no formato que ele já espera -->
-                <input type="hidden" name="data_proposta" id="data_proposta">
             </div>
+
+            <div class="form-section-title">Sobre o Problema</div>
 
             <div class="form-group">
                 <label for="servico">Tipo de Serviço:</label>
-                <select id="servico" name="servico">
-                    <option value="suporte_remoto">Suporte Remoto</option>
-                    <option value="limpeza_otimizacao">Limpeza e Otimização</option>
-                    <option value="configuracao_rede">Configuração de Rede</option>
-                    <option value="outro">Outro</option>
+                <select id="servico" name="servico" required>
+                    <option value="" disabled selected>Selecione uma opção...</option>
+                    <option value="Suporte Windows/Software">Suporte Windows/Software</option>
+                    <option value="Redes e Wi-Fi">Redes e Wi-Fi</option>
+                    <option value="Manutenção de Hardware">Manutenção de Hardware</option>
+                    <option value="Remoção de Vírus">Remoção de Vírus</option>
+                    <option value="Outros">Outros</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label for="descricao">O que está acontecendo?</label>
-                <textarea id="descricao" name="descricao" rows="4" required></textarea>
+                <label for="descricao">Descrição do Problema:</label>
+                <textarea id="descricao" name="descricao" rows="3" placeholder="O que está acontecendo?" required></textarea>
             </div>
-        
-            <button class="btn-acao" type="submit">Enviar Solicitação</button> <!-- Corrigido: era submitir -->
+
+            <div class="form-group">
+                <label for="deseja_agendar">Deseja Agendar?</label>
+                <select id="deseja_agendar" name="deseja_agendar" onchange="atualizarDataFinal()" required>
+                    <option value="SIM">Sim</option>
+                    <option value="NÃO" selected>Não</option>
+                </select>
+            </div>
+
+            <div class="form-section-title" id="container_agendamento" style="display: none;">
+                Agendamento Sugerido
+
+                <div class="grid-2-col">
+                    <div class="form-group">
+                        <label>Melhor dia:</label>
+                        <input type="date" id="data_dia" onchange="atualizarDataFinal()">
+                    </div>
+                    <div class="form-group">
+                        <label>Melhor horário:</label>
+                        <select id="hora_cheia" onchange="atualizarDataFinal()">
+                            <option value="08:00">08:00</option>
+                            <option value="09:00">09:00</option>
+                            <option value="10:00">10:00</option>
+                            <option value="11:00">11:00</option>
+                            <option value="12:00">12:00</option>
+                            <option value="13:00">13:00</option>
+                            <option value="14:00">14:00</option>
+                            <option value="15:00">15:00</option>
+                            <option value="16:00">16:00</option>
+                            <option value="17:00">17:00</option>
+                            <option value="18:00">18:00</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" name="data_proposta" id="data_proposta">
+
+            <button type="submit" class="btn-acao btn-full">
+                <i class="fas fa-paper-plane"></i> Enviar Solicitação
+            </button>
         </form>
+    </div>
 
-        <script>
-            // 1. MÁSCARA DO WHATSAPP (RESTAURADA)
-            const tel = document.getElementById('whatsapp');
+    <script>
+        // Máscara WhatsApp
+        const inputZap = document.getElementById('whatsapp');
+        inputZap.addEventListener('keyup', (e) => {
+            let v = e.target.value.replace(/\D/g, "");
+            if (v.length > 0) v = "(" + v;
+            if (v.length > 3) v = v.slice(0, 3) + ") " + v.slice(3);
+            if (v.length > 10) v = v.slice(0, 10) + "-" + v.slice(10);
+            e.target.value = v;
+        });
 
-            tel.addEventListener('keypress', (e) => {
-                let inputLength = tel.value.length;
-                // Formato: (XX) XXXXX-XXXX
-                if (inputLength === 0) tel.value += '(';
-                else if (inputLength === 3) tel.value += ') ';
-                else if (inputLength === 10) tel.value += '-';
-            });
+        // Lógica de Data e Validação
+        function atualizarDataFinal() {
+            const desejaAgendar = document.getElementById('deseja_agendar');
+            const containerAgendamento = document.getElementById('container_agendamento');
+            const campoDia = document.getElementById('data_dia');
+            const campoHora = document.getElementById('hora_cheia');
+            const inputHidden = document.getElementById('data_proposta');
 
-            tel.addEventListener('input', (e) => {
-                // Limita a 15 caracteres e garante que apenas números entrem (além da máscara)
-                if (tel.value.length > 15) {
-                    tel.value = tel.value.slice(0, 15);
-                }
-            });
+            const agora = new Date();
+            const hojeData = agora.toISOString().split("T")[0];
+            const horaAtual = agora.getHours();
+            const limiteExpediente = 18; // Define o fim do expediente
 
-            // 2. LÓGICA DE AGENDAMENTO (COM TRAVA PÓS-18H)
-            function toggleCalendario() {
-                const select = document.getElementById('deseja_agendar');
-                const campo = document.getElementById('campo_calendario');
-                const inputDia = document.getElementById('data_dia');
+            // 1. Bloqueio dinâmico para o dia atual após o fim do expediente
+            if (horaAtual >= limiteExpediente) {
+                const amanha = new Date(agora);
+                amanha.setDate(amanha.getDate() + 1);
+                campoDia.min = amanha.toISOString().split("T")[0];
                 
-                if (select.value === 'SIM') {
-                    campo.style.display = 'block';
-                    inputDia.required = true;
-
-                    const agora = new Date();
-                    const horaAtual = agora.getHours();
-                    let dataMinima = agora.toISOString().split("T")[0];
-
-                    // Se for 18h ou mais, bloqueia hoje e sugere amanhã
-                    if (horaAtual >= 18) {
-                        alert("Atendimento encerrado por hoje. Por favor, selecione uma data a partir de amanhã.");
-                        const amanha = new Date(agora);
-                        amanha.setDate(amanha.getDate() + 1);
-                        dataMinima = amanha.toISOString().split("T")[0];
-                        inputDia.value = dataMinima;
-                    }
-
-                    inputDia.min = dataMinima;
-                } else {
-                    campo.style.display = 'none';
-                    inputDia.required = false;
-                    document.getElementById('data_proposta').value = "";
+                // Se o usuário já tinha selecionado "Hoje" antes de dar 18h, limpamos
+                if (campoDia.value === hojeData) {
+                    campoDia.value = "";
                 }
+            } else {
+                campoDia.min = hojeData;
             }
 
-            function atualizarDataFinal() {
-                const campoDia = document.getElementById('data_dia');
-                const campoHora = document.getElementById('hora_cheia');
-                const inputHidden = document.getElementById('data_proposta');
-                
-                const diaSelecionado = campoDia.value;
-                const horaSelecionada = campoHora.value;
+            if (desejaAgendar.value === 'SIM') {
+                containerAgendamento.style.display = 'block';
 
-                if (diaSelecionado) {
-                    const agora = new Date();
-                    const hoje = agora.toISOString().split("T")[0];
-                    const horaAtual = agora.getHours();
-                    const apenasHora = parseInt(horaSelecionada.split(':')[0]);
+                // Torna obrigatório apenas se o usuário quer agendar
+                campoDia.required = true;
+                campoHora.required = true;
 
-                    // Valida se o horário escolhido para HOJE já passou
-                    if (diaSelecionado === hoje) {
-                        if (apenasHora <= horaAtual) {
-                            alert("Por favor, escolha um horário futuro para o atendimento de hoje.");
-                            // Sugere a próxima hora cheia se possível
-                            campoHora.value = (horaAtual < 17) ? (horaAtual + 1).toString().padStart(2, '0') + ":00" : "08:00";
-                            return;
-                        }
+                if (campoDia.value && campoHora.value) {
+                    const horaSelecionada = parseInt(campoHora.value.split(":")[0]);
+
+                    // 2. Validação de Horário de Expediente (Caso ainda existam opções no HTML)
+                    if (horaSelecionada > limiteExpediente) {
+                        alert("Nosso expediente encerra às 18:00. Por favor, escolha um horário anterior.");
+                        campoHora.value = "18:00"; // Reseta para o máximo permitido
+                        return;
                     }
 
-                    // Alimenta o campo oculto que o Flask vai ler
-                    inputHidden.value = diaSelecionado + 'T' + horaSelecionada;
+                    // 3. Validação de horário retroativo para o dia atual
+                    if (campoDia.value === hojeData && horaSelecionada <= horaAtual) {
+                        alert("Para hoje, selecione um horário futuro.");
+                        campoHora.value = ""; 
+                        inputHidden.value = "";
+                        return;
+                    }
+
+                    // Se tudo estiver OK, alimenta o input que o Python vai ler
+                    inputHidden.value = campoDia.value + 'T' + campoHora.value;
                 }
+            } else {
+                containerAgendamento.style.display = 'none';
+                inputHidden.value = '';
+
+                // Remove a obrigatoriedade para permitir o envio do formulário
+                campoDia.required = false;
+                campoHora.required = false;
+                
+                // Limpa os campos para evitar envio de dados residuais
+                campoDia.value = "";
+                campoHora.value = "08:00";
             }
-        </script>
-    </body>
+        }
+        // Inicializa a data mínima ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            atualizarDataFinal();
+        });
+    </script>
+</body>
 </html>

@@ -79,3 +79,16 @@ CREATE TABLE IF NOT EXISTS configuracoes (
     chave VARCHAR(50) PRIMARY KEY,
     valor VARCHAR(255) NOT NULL
 );
+
+-- 7. Cria a tabela de faturas geradas
+CREATE TABLE faturas_geradas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    chamado_id INT NOT NULL,
+    cliente_nome VARCHAR(255) NOT NULL,
+    cliente_email VARCHAR(255) NOT NULL,
+    valor_total DECIMAL(10, 2) NOT NULL,
+    data_geracao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    caminho_pdf VARCHAR(500), -- Caso queira salvar o arquivo em uma pasta
+    status_envio VARCHAR(50) DEFAULT 'Enviado',
+    FOREIGN KEY (chamado_id) REFERENCES chamados(id)
+);

@@ -4,161 +4,155 @@
     <meta charset="UTF-8">
     <title>Painel Admin - AjudaNoiz</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- Adicionei o FontAwesome para os ícones ficarem coerentes -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="admin-body">
+<body>
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo"><h2>AjudaNoiz 🛠️</h2></div>
+            <nav class="menu-nav">
+                <a href="{{ url_for('admin') }}" class="menu-item {% if request.endpoint == 'admin' %}active{% endif %}">
+                    <i class="fas fa-ticket-alt"></i> Chamados
+                </a>
+                <a href="{{ url_for('listar_clientes') }}" class="menu-item {% if request.endpoint == 'clientes' %}active{% endif %}">
+                    <i class="fas fa-users"></i> Clientes
+                </a>
+                <a href="{{ url_for('gerenciar_usuarios') }}" class="menu-item {% if request.endpoint == 'usuarios' %}active{% endif %}">
+                    <i class="fas fa-user-shield"></i> Equipe
+                </a>
+                <a href="{{ url_for('consultar_faturas') }}" class="menu-item {% if request.endpoint == 'faturas' %}active{% endif %}">
+                    <i class="fas fa-file-invoice-dollar"></i> Faturas
+                </a>
+                <a href="{{ url_for('exibir_configuracoes') }}" class="menu-item {% if request.endpoint == 'exibir_configuracoes' %}active{% endif %}">
+                    <i class="fas fa-cogs"></i> Configurações
+                </a>
+                <hr style="border: 0.5px solid rgba(255,255,255,0.1); margin: 15px 0;">
+                <a href="{{ url_for('logout') }}" class="menu-item" style="color: #ff7675;">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </a>
+            </nav>
+        </aside>
 
-    <!-- Nova Barra Superior de Usuário -->
-    <div class="user-header" style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background-color: #2c3e50; color: white; margin-bottom: 20px; border-radius: 0 0 8px 8px;">
-        <div style="margin-right: 20px;">
-            <i class="fas fa-user-circle"></i> Olá, <strong>{{ session['usuario_nome'] }}</strong> 
-            <span style="font-size: 0.8em; opacity: 0.8; margin-left: 5px;">({{ session['usuario_cargo'] }})</span>
-        </div>
-        <a href="{{ url_for('logout') }}" class="btn-excluir" style="text-decoration: none; padding: 5px 15px; font-size: 0.9em; background-color: #e74c3c; display: inline-flex; align-items: center; gap: 5px;">
-            <i class="fas fa-sign-out-alt"></i> Sair
-        </a>
-    </div>
+        <main class="main-content">
+            <header class="admin-card" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; margin-bottom: 20px;">
+                <span>Olá, <strong>{{ session['usuario_nome'] }}</strong></span>
+                <span class="badge status-em-progresso">{{ session['usuario_cargo'] }}</span>
+            </header>
 
-        <!-- Bloco de Mensagens Flash Limpo e Harmonioso -->
-    <div class="container mt-2">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-            {# Mapeamos as categorias do Flask para as suas classes CSS #}
-            {% set classe_alerta = 'alert-success' if category in ['success', 'sucesso'] 
-                                    else 'alert-danger' if category == 'danger' 
-                                    else 'alert-warning' %}
-            
-            <div class="alert {{ classe_alerta }}">
-                {{ message }}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}
+            <div class="admin-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Gestão de Chamados Ativos</h2>
+                    <a href="{{ url_for('visualizar_arquivo') }}" class="btn-p-acao btn-detalhes" style="background-color: #636e72;">
+                        <i class="fas fa-archive"></i> Ver Arquivo
+                    </a>
+                </div>
+
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Serviço</th>
+                            <th>Técnico</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for chamado in chamados %}
+                        <tr>
+                            <td>#{{ chamado.id }}</td>
+                            <td>
+                                <span style="color: var(--primary); font-weight: 500;">
+                                        </i> {{ chamado.cliente_nome }}
+                                    </span>
+                            </td>
+                            <td>
+                                <span style="color: var(--primary); font-weight: 500;">
+                                        </i> {{ chamado.servico_titulo }}
+                                    </span>
+                            </td>
+                            <td>
+                                {% if chamado.usuario_id %}
+                                    <span style="color: var(--primary); font-weight: 500;">
+                                        <i class="fas fa-user-check"></i> {{ chamado.usuario_nome }}
+                                    </span>
+                                {% else %}
+                                    <span style="color: #95a5a6;"><i>Pendente</i></span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if chamado.status == 'Ag_pendente' %}
+                                    <span class="badge status-ag_pendente">Ag. Atendimento</span>
+                                {% elif chamado.status == 'Agendado' %}
+                                    <span class="badge status-agendado">Agendado</span>
+                                {% elif chamado.status == 'Concluído' %}
+                                    <span class="badge status-concluido">Concluído</span>
+                                {% else %}
+                                    <span class="badge status-{{ chamado.status | lower | replace(' ', '-') }}">
+                                        {{ chamado.status }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="td-acoes">
+                                    <a href="{{ url_for('ver_chamado', id=chamado.id) }}" class="btn-p-acao btn-detalhes" title="Ver Detalhes">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+
+                                    {% if not chamado.usuario_id %}
+                                    <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn-p-acao btn-assumir" title="Assumir">
+                                            <i class="fas fa-user-plus"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+
+                                    {% if chamado.status in ['Em progresso', 'Agendado', 'Ag_pendente'] %}
+                                        <form action="{{ url_for('concluir_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
+                                            <button type="submit" class="btn-p-acao btn-concluir" title="Concluir">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                        </form>
+
+                                        <form action="{{ url_for('suspender_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
+                                            <button type="submit" class="btn-p-acao btn-suspender" title="Suspender" style="background-color: #636e72;">
+                                                <i class="fas fa-pause"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+
+                                    {% if chamado.status == 'Suspenso' %}
+                                    <form action="{{ url_for('retomar_chamado', id=chamado.id) }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn-p-acao" title="Retomar" style="background-color: #0984e3; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+
+                                    <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Mover para o arquivo?')">
+                                        <button type="submit" class="btn-p-acao btn-excluir-mini" title="Excluir">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            {% endfor %}
-        {% endif %}
-        {% endwith %}
+            {% endblock %}
+        </main>
     </div>
-
-    {% block content %}
-    <h1>Painel de Chamados 📋</h1>
-    
-    <div class="admin-toolbar">
-        {% if session['usuario_cargo'] == 'admin' %}
-            <a href="{{ url_for('gerenciar_usuarios') }}" class="btn-toolbar">👥 Gerenciar Equipe</a>
-            <a href="{{ url_for('exibir_configuracoes') }}" class="btn-toolbar"> ⚙ Exibir Configurações</a>
-        {% endif %}
-        <a href="/admin/clientes" class="btn-toolbar">👤 Gerenciar Clientes</a>
-        <a href="/arquivo" class="btn-toolbar">📁 Chamados Arquivados</a>
-    </div>
-
-    <table class="admin-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Cliente</th>
-                <th>Serviço</th>
-                <th>WhatsApp</th>
-                <th>Descrição</th>
-                <th>Data</th>
-                <th>Status</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for chamado in chamados %}
-     
-                <tr>
-                    <td>
-                        <a href="{{ url_for('ver_chamado', id=chamado.id) }}" style="text-decoration: none; font-weight: bold; color: #007bff;">
-                            #{{ chamado.id }}
-                        </a>
-                    </td>
-                    <td>{{ chamado.cliente_nome }}</td>
-                    <td>{{ chamado.servico_titulo }}</td>
-                    <td>{{ chamado.cliente_whatsapp }}</td>
-                    <td>{{ chamado.descricao }}</td>
-                    <td>{{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
-                    
-                    <!-- Coluna de Status Unificada -->
-                    <td>
-                        <span class="status-badge status-{{ chamado.status }}" 
-                            {% if chamado.status == 'Agendado' and chamado.data_agendada %} 
-                            title="Agendado para: {{ chamado.data_agendada.strftime('%d/%m/%Y às %H:%M') }}" 
-                            style="cursor: help;"
-                            {% endif %}>
-                            {{ chamado.status }}
-                            {% if chamado.status == 'Agendado' and chamado.data_agendada %}
-                                <i class="fas fa-calendar-alt" style="margin-left: 5px;"></i>
-                            {% endif %}
-                        </span>
-                    </td>
-
-                    <!-- Coluna de Ações -->
-                    <td class="td-acoes">
-                        <div class="acoes-wrapper">
-                            {% if chamado.status|trim == 'Novo' or chamado.status|trim == 'Ag_pendente' %}
-                                <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
-                                    <button type="submit" class="btn-acao" style="background-color: #b8daff; color: #004085;">
-                                        🙋‍♂️ Assumir
-                                    </button>
-                                </form>
-                            {% elif chamado.status|trim == 'Em progresso' or chamado.status|trim == 'Agendado' %}
-                                <form action="{{ url_for('suspender_chamado', id=chamado.id) }}" method="POST">
-                                    <button type="submit" class="btn-acao" style="background-color: #ffeeba; color: #856404;">
-                                        ⏳ Suspender
-                                    </button>
-                                </form>
-                                <form action="{{ url_for('concluir_chamado', id=chamado.id) }}" method="POST">
-                                    <button type="submit" class="btn-acao" style="background-color: #c3e6cb; color: #155724;">
-                                        ✅ Concluir
-                                    </button>
-                                </form> 
-                            {% elif chamado.status|trim == 'Suspenso' %}
-                                <form action="{{ url_for('assumir_chamado', id=chamado.id) }}" method="POST">
-                                    <button type="submit" class="btn-acao" style="background-color: #b8daff; color: #004085;">
-                                        ▶️ Retomar
-                                    </button>
-                                </form>
-                            {% endif %}
-
-                            <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST">
-                                <button type="submit" class="btn-excluir" onclick="return confirm('Excluir?')">
-                                    🗑️
-                                </button>
-                            </form>
-                            {% if chamado.status|trim == 'Concluído' %}
-                                <a href="{{ url_for('enviar_fatura_email', id=chamado.id) }}" 
-                                title="Enviar Fatura por E-mail" 
-                                style="color: #2c3e50; font-size: 1.2rem; margin-left: 10px; text-decoration: none;"
-                                onclick="return confirm('Gerar e enviar fatura para o cliente?')">
-                                    <i class="fas fa-file-pdf"></i>
-                                </a>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-            {% else %}
-            <tr>
-                <td colspan="8" style="text-align: center; padding: 20px;">Nenhum chamado encontrado.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-        <!-- Controles de Paginação -->
-    {% if total_paginas is defined %}
-    <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: center; gap: 10px; align-items: center;">
-        {% if pagina_atual|int > 1 %}
-            <a href="{{ url_for('admin', page=pagina_atual - 1) }}" class="btn-toolbar" style="padding: 5px 15px;">⬅️ Anterior</a>
-        {% endif %}
-
-        <span style="font-weight: bold; color: #2c3e50;">
-            Página {{ pagina_atual|int }} de {{ total_paginas|int }}
-        </span>
-
-        {% if pagina_atual|int < total_paginas|int %}
-            <a href="{{ url_for('admin', page=pagina_atual + 1) }}" class="btn-toolbar" style="padding: 5px 15px;">Próxima ➡️</a>
-        {% endif %}
-    </div>
-    {% endif %}
-    {% endblock %}
 </body>
 </html>

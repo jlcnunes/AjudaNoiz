@@ -2,22 +2,51 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - AjudaNoiz</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
-    <div style="max-width: 300px; margin: 100px auto;">
-        <h2>Acesso Restrito 🔐</h2>
+<body class="client-body"> <div class="client-card" style="max-width: 400px; margin: 80px auto;">
+        
+        <div class="header-logo" style="text-align: center; margin-bottom: 30px;">
+            <h1 style="font-size: 2.5rem;">AjudaNoiz 🛠️</h1>
+            <p>Painel Administrativo</p>
+        </div>
+
+        <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">Acesso Restrito 🔐</h2>
+
         <form method="POST">
-            <input type="email" name="email" placeholder="E-mail" required>
-            <input type="password" name="senha" placeholder="Senha" required>
-            <button type="submit">Entrar</button>
+            <div class="form-group">
+                <label for="email">E-mail Profissional</label>
+                <input type="email" name="email" id="email" placeholder="seu@email.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="senha">Senha</label>
+                <input type="password" name="senha" id="senha" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-enviar-cliente" style="margin-top: 10px;">
+                <i class="fas fa-sign-in-alt"></i> Entrar no Sistema
+            </button>
         </form>
-        {% with messages = get_flashed_messages() %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-            <p style="color: red;">{{ messages[0] }}</p>
+            {% for category, message in messages %}
+              <p style="color: var(--danger); text-align: center; margin-top: 15px; font-weight: bold;">
+                  {{ message }}
+              </p>
+            {% endfor %}
           {% endif %}
         {% endwith %}
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/" style="color: var(--info); text-decoration: none; font-size: 0.9rem;">
+                <i class="fas fa-arrow-left"></i> Voltar para o Site
+            </a>
+        </div>
     </div>
 </body>
 </html>

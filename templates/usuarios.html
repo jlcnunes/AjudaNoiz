@@ -1,52 +1,33 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Equipe - AjudaNoiz</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body class="admin-body">
-    <header style="display: flex; justify-content: space-between; align-items: center;">
-        <h1>👥 Gerenciamento de Equipe</h1>
-    </header>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <section class="admin-card">
-        <h3>➕ Novo Usuário</h3>
-        <form action="/admin/usuarios/salvar" method="POST" class="grid-form">
-            <div class="form-group">
-                <label>Nome Completo:</label>
-                <input type="text" name="nome" required>
+{% extends "admin.html" %}
+{% block content %}
+<div class="admin-card">
+    <h2>👥 Equipe Técnica</h2>
+    
+    <section style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+        <h3>➕ Novo Integrante</h3>
+        <form action="/admin/usuarios/salvar" method="POST">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" name="nome" required>
+                </div>
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" name="senha" required>
+                </div>
+                <div class="form-group">
+                    <label>Cargo</label>
+                    <select name="cargo">
+                        <option value="tecnico">Técnico</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
             </div>
-            
-            <div class="form-group">
-                <label>E-mail Corporativo:</label>
-                <input type="email" name="email" required>
-            </div>
-
-            <div class="form-group">
-                <label>Senha de Acesso:</label>
-                <input type="password" name="senha" required minlength="6">
-            </div>
-
-            <div class="form-group">
-                <label>Nível de Permissão:</label>
-                <select name="cargo" required>
-                    <option value="tecnico">Técnico</option>
-                    <option value="admin">Administrador</option>
-                </select>
-            </div>
-
-            <div class="full-width">
-                <button type="submit" class="btn-acao">💾 Cadastrar na Equipe</button>
-            </div>
+            <button type="submit" class="btn-acao" style="margin-top: 10px;">💾 Cadastrar</button>
         </form>
     </section>
 
@@ -54,37 +35,26 @@
         <thead>
             <tr>
                 <th>Nome</th>
-                <th>E-mail</th>
                 <th>Cargo</th>
-                <th>Data de Cadastro</th>
+                <th>Cadastro</th>
                 <th>Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for usuario in usuarios %}
             <tr>
-                <td><strong>{{ usuario.nome }}</strong></td>
-                <td>{{ usuario.email }}</td>
-                <td>
-                    <span class="badge {{ 'badge-admin' if usuario.cargo == 'admin' else 'badge-tecnico' }}">
-                        {{ usuario.cargo }}
-                    </span>
-                </td>
+                <td><strong>{{ usuario.nome }}</strong><br><small>{{ usuario.email }}</small></td>
+                <td><span class="badge-status {{ 'status-concluido' if usuario.cargo == 'admin' else 'status-pendente' }}">{{ usuario.cargo }}</span></td>
                 <td>{{ usuario.data_cadastro.strftime('%d/%m/%Y') }}</td>
                 <td>
-                    <form action="{{ url_for('excluir_usuario', id=usuario.id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn-excluir" onclick="return confirm('Remover este usuário da equipe?')">
-                            🗑️
-                        </button>
+                    <form action="{{ url_for('excluir_usuario', id=usuario.id) }}" method="POST" onsubmit="return confirm('Excluir usuário?')">
+                        <button type="submit" class="btn-p-acao btn-excluir-mini" title="Excluir">
+                            <i class="fas fa-trash"></i></button>
                     </form>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-
-    <br>
-    <a href="/admin" class="btn-voltar">⬅ Voltar ao Painel de Chamados</a>
-
-</body>
-</html>
+</div>
+{% endblock %}

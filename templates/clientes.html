@@ -1,132 +1,79 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Gerenciar Clientes - AjudaNoiz</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body class="admin-body">
-    <h1>👥 Gerenciamento de Clientes</h1>
-    
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ 'success' if category in ['success', 'sucesso'] else 'danger' }}">
-        {{ message }}
-      </div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+{% extends "admin.html" %}
 
-    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; color: black;">
-        <h3 id="form-title">➕ Cadastrar Novo Cliente</h3>
-        <form action="/admin/clientes/salvar" method="POST" id="cliente-form">
-            <input type="hidden" name="id" id="cliente-id">
-            
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="text" name="nome" id="cliente-nome" placeholder="Nome Completo" required style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-                <input type="email" name="email" id="cliente-email" placeholder="E-mail" required style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-                <input type="tel" name="whatsapp" id="cliente-whatsapp" placeholder="(00) 00000-0000" required pattern="\(\d{2}\)\s\d{5}-\d{4}" maxlength="15" title="Formato esperado: (00) 00000-0000" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-                
-                <button type="submit" class="btn-acao" style="background-color: #28a745; border: none; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
-                    💾 Salvar Cliente
-                </button>
-                <button type="button" onclick="limparFormulario()" class="btn-acao">
-                    Limpar
-                </button>
-            </div>
-        </form>
-    </div>
+{% block content %}
+    <div class="cliente-card">
+        <h2>👥 Gerenciamento de Clientes</h2>
+        <section style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+        <h3>➕ Novo Cliente</h3>
+            <form action="/admin/clientes/salvar" method="POST">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label for="nome">Nome Completo:</label>
+                        <input type="text" id="nome" name="nome" placeholder="Qual é o nome do cliente?" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-mail</label>
+                        <input type="email" id="email" name="email" placeholder="Para a fatura" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="whatsapp">WhatsApp:</label>
+                        <input type="tel" id="whatsapp" name="whatsapp" placeholder="(00) 00000-0000" required 
+                            maxlength="15" pattern="\(\d{2}\)\s\d{5}-\d{4}">
+                    </div>
+                </div>
+                <button type="submit" class="btn-acao" style="margin-top: 10px;">💾 Cadastrar</button>
+            </form>
+        </section>
 
-    <table class="admin-table">
+    <table class="cliente-table">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Nome</th>
                 <th>E-mail</th>
                 <th>WhatsApp</th>
-                <th>Chamados</th>
-                <th>Ações</th>
+                <th>Cadastro</th>
+                <th>Ativo</th>
+                <th>Editar</th>
+                <th>Excluir</th>
             </tr>
         </thead>
         <tbody>
             {% for cliente in clientes %}
             <tr>
-                <td>#{{ cliente.id }}</td>
                 <td><strong>{{ cliente.nome }}</strong></td>
                 <td>{{ cliente.email }}</td>
                 <td>{{ cliente.whatsapp }}</td>
-                <td style="text-align: center;">{{ cliente.total_chamados }}</td>
-                <td style="white-space: nowrap;">
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <button type="button" class="btn-acao" 
-                                onclick="preencherFormulario('{{ cliente.id }}', '{{ cliente.nome }}', '{{ cliente.email }}', '{{ cliente.whatsapp }}')"
-                                style="padding: 5px 10px; margin: 0;">
-                            ✏️
-                        </button>
-
-                        <form action="{{ url_for('excluir_cliente', id=cliente.id) }}" method="POST" style="margin: 0;">
-                            <button type="submit" class="btn-excluir" 
-                                    onclick="return confirm('Deseja realmente desativar este cliente?')"
-                                    style="padding: 5px 10px; margin: 0;">
-                                🗑️
-                            </button>
-                        </form>
+                <td>{{ cliente.data_cadastro.strftime('%d/%m/%Y') }}</td>
+                <td>{{ cliente.total_chamados }}</td>
+                <td>
+                    <div style="display: flex; gap: 5px;">
+                        <a href="{{ url_for('editar_cliente', id=cliente.id) }}" class="btn-p-acao" title="Editar Cliente" style="background-color: var(--info);">
+                            <i class="fas fa-edit"></i>
+                        </a>
                     </div>
                 </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6">Nenhum cliente cadastrado.</td>
+                <td>
+                    <form action="{{ url_for('excluir_cliente', id=cliente.id) }}" method="POST" onsubmit="return confirm('Excluir cliente?')">
+                        <button type="submit" class="btn-p-acao btn-excluir-mini" title="Excluir">
+                            <i class="fas fa-trash-alt"></i>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+</div>
 
-    <br>
-    <a href="/admin" class="btn-voltar">⬅ Voltar ao Painel de Chamados</a>
+<script>
+        // Máscara WhatsApp
+        const inputZap = document.getElementById('whatsapp');
+        inputZap.addEventListener('keyup', (e) => {
+            let v = e.target.value.replace(/\D/g, "");
+            if (v.length > 0) v = "(" + v;
+            if (v.length > 3) v = v.slice(0, 3) + ") " + v.slice(3);
+            if (v.length > 10) v = v.slice(0, 10) + "-" + v.slice(10);
+            e.target.value = v;
+        });
+</script>
 
-    <script>
-    function preencherFormulario(id, nome, email, whatsapp) {
-        // Altera o título do formulário
-        document.getElementById('form-title').innerText = "✏️ Editando Cliente #" + id;
-        
-        // Preenche os campos do formulário
-        document.getElementById('cliente-id').value = id;
-        document.getElementById('cliente-nome').value = nome;
-        document.getElementById('cliente-email').value = email;
-        document.getElementById('cliente-whatsapp').value = whatsapp;
-        
-        // Foca no campo nome para facilitar
-        document.getElementById('cliente-nome').focus();
-        
-        // Rola a página para o topo suavemente
-        window.scrollTo({top: 0, behavior: 'smooth'});
-    }
-
-    function limparFormulario() {
-        document.getElementById('form-title').innerText = "➕ Cadastrar Novo Cliente";
-        document.getElementById('cliente-id').value = "";
-        document.getElementById('cliente-form').reset();
-    }
-
-    const inputZap = document.getElementById('cliente-whatsapp');
-
-    inputZap.addEventListener('keyup', (e) => {
-        let v = e.target.value.replace(/\D/g, ""); // Remove tudo que não é dígito
-        
-        if (v.length > 0) {
-            v = "(" + v;
-        }
-        if (v.length > 3) {
-            v = v.slice(0, 3) + ") " + v.slice(3);
-        }
-        if (v.length > 10) {
-            v = v.slice(0, 10) + "-" + v.slice(10);
-        }
-        
-        e.target.value = v.slice(0, 15); // Limita ao tamanho final da máscara
-    });
-    </script>
-</body>
-</html>
+{% endblock %}

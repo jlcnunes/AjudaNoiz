@@ -2,20 +2,26 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Solicitação Recebida - AjudaNoiz</title>
+    <title>Sucesso - AjudaNoiz</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body style="background-color: #f0f2f5;">
-    <div class="sucesso-container">
-        <div class="sucesso-icon">✅</div>
+<body class="client-body">
+    <div class="client-card sucesso-container">
+        <div class="sucesso-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
         <h1>Solicitação Enviada!</h1>
-        <p>Recebemos o seu pedido. Um de nossos técnicos entrará em contato em breve.</p>
+        <p>Recebemos o seu pedido com sucesso.</p>
         
-        <p>Seu número de chamado é:</p>
+        <p>Anote o número do seu chamado:</p>
         <div class="chamado-badge">#{{ chamado_id }}</div>
         
-        <br>
-        <a href="/" class="btn-acao">Fazer Nova Solicitação</a>
+        <div style="margin-top: 30px;">
+            <a href="/" class="btn-acao">
+                <i class="fas fa-arrow-left"></i> Voltar ao Início
+            </a>
+        </div>
     </div>
 </body>
 </html>

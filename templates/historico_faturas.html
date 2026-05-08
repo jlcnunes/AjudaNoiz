@@ -1,0 +1,27 @@
+{% extends "admin.html" %}
+{% block content %}
+<div class="resumo-faturas">
+    <h3>Resumo do Período ({{ mes_selecionado }}/{{ ano_selecionado }})</h3>
+    <p>Total Geral: <strong>R$ {{ total_periodo | brl }}</strong></p>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Cliente</th>
+            <th>Data</th>
+            <th>Valor</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fatura in faturas %}
+        <tr>
+            <td>{{ fatura.cliente_nome }}</td>
+            <td>{{ fatura.data_geracao.strftime('%d/%m/%Y') }}</td>
+            <td>R$ {{ fatura.valor_total | brl }}</td>
+            <td>{{ fatura.status_envio }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>{% endblock %}

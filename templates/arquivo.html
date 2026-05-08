@@ -1,19 +1,13 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Arquivo do Chamados</title>
-    <link rel="stylesheet" href="{{url_for('static', filename='css/style.css') }}">  
-</head>
-<body class="admin-body">
-    <h1>🗄️ Arquivo de Chamados (Excluídos)</h1>
+{% extends "admin.html" %}
+{% block content %}
+<div class="admin-card">
+    <h2>🗄️ Arquivo de Chamados (Excluídos)</h2>
 
-    <form method="GET" action="/arquivo" class="filtro-container" style="margin-bottom: 20px;">
-        <input type="number" name="id" placeholder="ID" value="{{ request.args.get('id', '') }}">
-        <input type="text" name="cliente" placeholder="Cliente" value="{{ request.args.get('cliente', '') }}">
-        <input type="text" name="tecnico" placeholder="Técnico" value="{{ request.args.get('tecnico', '') }}">
+    <form method="GET" action="/arquivo" class="filter-container">
+        <input type="number" name="id" class="filter-input" placeholder="ID" value="{{ request.args.get('id', '') }}">
+        <input type="text" name="cliente" class="filter-input" placeholder="Cliente" value="{{ request.args.get('cliente', '') }}">
         <button class="btn-acao" type="submit">🔍 Filtrar</button>
-        <a href="/arquivo" class="btn-acao">🧹 Limpar</a>
+        <a href="/arquivo" class="btn-toolbar">🧹 Limpar</a>
     </form>
 
     <table class="admin-table">
@@ -21,8 +15,7 @@
             <tr>
                 <th>ID</th>
                 <th>Cliente</th>
-                <th>Ténico Responsável</th>
-                <th>Criação</th>
+                <th>Técnico</th>
                 <th>Exclusão</th>
                 <th>Ação</th>
             </tr>
@@ -33,21 +26,15 @@
                 <td>#{{ chamado.id }}</td>
                 <td>{{ chamado.cliente_nome }}</td>
                 <td>{{ chamado.nome_tecnico or 'Nenhum' }}</td>
-                <td>{{ chamado.data_criacao.strftime('%d/%m/%y') }}</td>
-                <td>{{ chamado.data_exclusao.strftime('%d/%m/%y %H:%M') if chamado.data_exclusao }}</td>
-
+                <td>{{ chamado.data_exclusao.strftime('%d/%m/%y %H:%M') }}</td>
                 <td>
-                    <a href="{{ url_for('ver_chamado', id=chamado.id) }}" class="btn-acao" style="text-decoration: none; background-color: #17a2b8; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8em;">
-                        👁️ Ver Histórico
+                    <a href="{{ url_for('ver_chamado', id=chamado.id) }}" class="btn-toolbar">
+                        <i class="fas fa-eye"></i> Ver
                     </a>
                 </td>
             </tr>
-            {%  endfor %}
+            {% endfor %}
         </tbody>
     </table>
-    
-    <br>
-    <a href="/admin" class="btn-voltar">⬅ Voltar ao Painel de Chamados</a>
-
-</body>
-</html>
+</div>
+{% endblock %}

@@ -1,87 +1,102 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Detalhes do Chamado #{{ chamado.id }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body class="admin-body">
+{% extends "admin.html" %}
+
+{% block content %}
+<div class="admin-layout-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h1>Detalhes do Chamado #{{ chamado.id }}</h1>
-    
-    <div class="tempo-badge">
-        ⏱️ Tempo Total Investido: {{ tempo_total }}
+    <div class="badge-status {% if chamado.ativo == 1 %}status-pendente{% else %}status-concluido{% endif %}" style="padding: 10px 20px; font-size: 1rem;">
+        {{ 'ATIVO' if chamado.ativo == 1 else 'ARQUIVADO' }}
     </div>
+</div>
 
-        <!-- Seção de Ações Financeiras -->
-    <div class="admin-card" style="border-left: 5px solid #2c3e50; margin-top: 20px;">
-        <h3><i class="fas fa-file-invoice-dollar"></i> Faturamento</h3>
-        <p>O valor total acumulado até agora é baseado nas notas técnicas registradas.</p>
+<div style="display: grid; grid-template-columns: 1fr 350px; gap: 20px; align-items: start;">
+    
+    <div class="left-column">
         
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <!-- Botão para Visualizar (abre em nova aba) -->
-            <a href="{{ url_for('preparar_fatura', id=chamado.id) }}" target="_blank" class="btn-toolbar" style="background-color: #f8f9fa;">
-                <i class="fas fa-eye"></i> Visualizar Fatura
-            </a>
+        <div class="admin-card">
+            <h3><i class="fas fa-info-circle"></i> Informações do Chamado</h3>
+            <hr>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <p><strong>Cliente:</strong> {{ chamado.cliente_nome }}</p>
+                <p><strong>Serviço:</strong> {{ chamado.servico_titulo }}</p>
+                <p><strong>E-mail:</strong> {{ chamado.cliente_email }}</p>
+                <p><strong>WhatsApp:</strong> {{ chamado.cliente_whatsapp }}</p>
+                <p><strong>Técnico:</strong> {{ chamado.usuario_nome or 'Não atribuído' }}</p>
+                <p><strong>Abertura:</strong> {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}</p>
+            </div>
+            <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                <strong>Descrição do Problema:</strong><br>
+                {{ chamado.descricao }}
+            </div>
+        </div>
 
-            <!-- Botão para Enviar por E-mail -->
-            <a href="{{ url_for('enviar_fatura_email', id=chamado.id) }}" 
-            class="btn-toolbar" 
-            style="background-color: #25d366; color: white; border-color: #128c7e;"
-            onclick="return confirm('Deseja gerar o PDF e enviar agora para o e-mail do cliente?')">
-                <i class="fas fa-paper-plane"></i> Gerar e Enviar PDF
-            </a>
+        {% if chamado.ativo == 1 %}
+        <div class="admin-card" style="border-left: 5px solid #3498db;">
+            <h3><i class="fas fa-comment-medical"></i> Registrar Atendimento</h3>
+            <form action="{{ url_for('adicionar_nota', id=chamado.id) }}" method="POST">
+                <textarea name="nota" placeholder="Descreva o que foi feito neste atendimento..." style="height: 100px;" required></textarea>
+                <div style="display: flex; gap: 15px; align-items: flex-end; margin-top: 10px;">
+                    <div style="flex: 1;">
+                        <label>Tempo gasto (minutos):</label>
+                        <input type="number" name="tempo" placeholder="Ex: 30" required min="1">
+                    </div>
+                    <button type="submit" class="btn-acao" style="height: 45px;">Gravar Nota</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="admin-card">
+            <h3><i class="fas fa-history"></i> Histórico / Timeline</h3>
+            <div style="margin-top: 20px;">
+                {% for log in historico %}
+                <div style="border-left: 2px solid #ddd; padding-left: 20px; margin-bottom: 20px; position: relative;">
+                    <div style="width: 12px; height: 12px; background: #2c3e50; border-radius: 50%; position: absolute; left: -7px; top: 5px;"></div>
+                    <small style="color: #666;">{{ log.data_acao.strftime('%d/%m/%Y %H:%M') }} - <strong>{{ log.nome_usuario }}</strong></small>
+                    <p style="margin: 5px 0; {% if 'Nota' in log.acao %}font-style: italic; color: #2c3e50;{% endif %}">
+                        {{ log.acao }}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
-    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; color: black;">
-        <p><strong>Cliente:</strong> {{ chamado.cliente_nome }}</p>
-        <p><strong>Status Atual:</strong> {{ chamado.status }}</p>
-        {% if chamado.status == 'Agendado' and chamado.data_proposta %}
-        <p><strong>📅 Data Agendada:</strong> {{ chamado.data_proposta.strftime('%d/%m/%Y às %H:%M') }}</p>
-        {% endif %}
-        <p><strong>Descrição:</strong> {{ chamado.descricao }}</p>
-    </div>
-
-    {% if chamado.ativo == 1 %}
-    <div class="nota-tecnica-container">
-        <h3>📝 Registrar Atendimento</h3>
-        <form action="{{ url_for('adicionar_nota', id=chamado.id) }}" method="POST" onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerText='Gravando...';">
-            <textarea name="nota" class="nota-textarea" rows="3" placeholder="Descreva o que foi feito..." required></textarea>
-            
-            <div class="nota-form-footer">
-                <div style="width: 150px;">
-                    <label>Tempo (min):</label>
-                    <input type="number" name="tempo" placeholder="Minutos" required min="1">
-                </div>
-                <button type="submit" class="btn-acao">Gravar Atendimento</button>
+    <div class="right-column">
+        
+        <div class="admin-card" style="border-top: 5px solid #25d366; text-align: center;">
+            <h3><i class="fas fa-dollar-sign"></i> Faturamento</h3>
+            <div style="margin: 20px 0;">
+                <span style="font-size: 0.9rem; color: #666;">Tempo Total Acumulado</span><br>
+                <strong style="font-size: 1.5rem;">{{ tempo_total }}</strong>
             </div>
-        </form>
-    </div>
-    {% endif %}
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="{{ url_for('preparar_fatura', id=chamado.id) }}" target="_blank" class="btn-toolbar" style="background-color: #f8f9fa; border: 1px solid #ddd;">
+                    <i class="fas fa-file-pdf"></i> Visualizar Fatura
+                </a>
 
-    <h2>⏳ Linha do Tempo</h2>
-    <ul class="timeline">
-        {% for log in historico %}
-            <li class="timeline-item {% if 'Nota Técnica' in log.acao %}nota-importante{% endif %}">
-                <span class="timeline-date">{{ log.data_acao.strftime('%d/%m/%Y %H:%M') }}</span>
-                <div class="timeline-content">
-                    <strong>{{ log.nome_usuario }}:</strong> {{ log.acao }}
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
+                {% if chamado.ativo == 1 %}
+                <a href="{{ url_for('enviar_fatura_email', id=chamado.id) }}" class="btn-acao" onclick="return confirm('Gerar e enviar fatura oficial por e-mail?')">
+                    <i class="fas fa-paper-plane"></i> Enviar Fatura
+                </a>
+                
+                <hr>
+                
+                <form action="{{ url_for('excluir', id=chamado.id) }}" method="POST" onsubmit="return confirm('Isso removerá o chamado da lista ativa. Confirmar?')">
+                    <button type="submit" class="btn-excluir" style="width: 100%; padding: 12px;">
+                        <i class="fas fa-archive"></i> Arquivar Chamado
+                    </button>
+                </form>
+                {% else %}
+                <div class="alert alert-success">Este chamado foi concluído e arquivado.</div>
+                {% endif %}
+            </div>
+        </div>
 
-    <br>
-    <div style="display: flex; gap: 10px; margin-top: 20px;">
-        {% if chamado.ativo == 1 %}
-            <a href="/admin" class="btn-acao" style="background-color: #6c757d; color: white; text-decoration: none; padding: 10px; border-radius: 4px;">
-                ⬅ Voltar ao Painel Ativo
-            </a>
-        {% else %}
-            <a href="/arquivo" class="btn-acao" style="background-color: #17a2b8; color: white; text-decoration: none; padding: 10px; border-radius: 4px;">
-                ⬅ Voltar ao Arquivo
-            </a>
-        {% endif %}
+        <a href="{{ url_for('admin') if chamado.ativo == 1 else url_for('visualizar_arquivo') }}" class="btn-toolbar" style="display: block; text-align: center; margin-top: 10px;">
+            <i class="fas fa-arrow-left"></i> Voltar à Lista
+        </a>
     </div>
-</body>
-</html>
+
+</div>
+{% endblock %}

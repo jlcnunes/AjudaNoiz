@@ -38,6 +38,18 @@ def enviar_email_notificacao(destinatario, assunto, corpo_texto):
         msg = Message(subject=assunto, recipients=[destinatario])
         msg.body = corpo_texto
         mail.send(msg)
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            sql = """INSERT INTO faturas_geradas 
+                    (chamado_id, cliente_nome, cliente_email, valor_total) 
+                    VALUES (%s, %s, %s, %s)"""
+            cursor.execute(sql, (id, cliente['nome'], cliente['email'], financeiro['valor_total']))
+            conn.commit()
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            print(f"Erro ao salvar histórico de fatura: {e}")
         print(f"📧 Notificação enviada para {destinatario}")
     except Exception as e:
         print(f"⚠️ Falha ao enviar notificação: {e}")
@@ -87,11 +99,11 @@ def enviar():
     whatsapp = request.form.get('whatsapp')
     servico = request.form.get('servico')
     descricao = request.form.get('descricao')
-    deseja_agendar = request.form.get('deseja_agendar') # 'SIM' ou 'NÃO'
-    data_proposta = request.form.get('data_proposta') # Vem do seu input hidden
+    deseja_agendar = request.form.get('deseja_agendar')  # 'SIM' ou 'NÃO'
+    data_proposta = request.form.get('data_proposta')  # Vem do seu input hidden
 
     # --- LÓGICA DE STATUS AUTOMÁTICO ---
-    # Se o cliente escolheu "SIM" e forneceu uma data, o status é "Agendado".
+    # Se o cliente escolheu "SIM" e forneceu uma data, o status é "Ag_pendente".
     # Caso contrário, o status padrão é "Novo".
     status_inicial = 'Novo'
     if deseja_agendar == 'SIM' and data_proposta:
@@ -105,7 +117,7 @@ def enviar():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Lógica de Cliente (Mantida do seu original)
+        # Lógica de Cliente
         cursor.execute('SELECT id FROM clientes WHERE email = %s', (email,))
         cliente_existente = cursor.fetchone()
         if cliente_existente:
@@ -122,7 +134,7 @@ def enviar():
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql_chamado, (
-            cliente_id, nome, email, whatsapp, servico, 
+            cliente_id, nome, email, whatsapp, servico,
             descricao, deseja_agendar, data_proposta, status_inicial
         ))
         
@@ -132,23 +144,25 @@ def enviar():
         # * 3. Envio de Notificação por E-mail
         try:
             texto_agendamento = ""
-            if status_inicial == 'Agendado':
+            if status_inicial == 'Ag_pendente':
                 # Converte a string da data para um formato bonito no e-mail
                 dt = datetime.strptime(data_proposta, '%Y-%m-%dT%H:%M')
                 texto_agendamento = f"\n📅 Seu pré-agendamento foi solicitado para: {dt.strftime('%d/%m/%Y às %H:%M')}\n"
 
             assunto_email = f"🚀 Chamado #{chamado_id} Recebido"
             corpo_email = f"""Olá {nome}, tudo bem? 👋
-        
-                Recebemos sua solicitação!
-                🆔 Chamado: #{chamado_id}
-                🔧 Serviço: {servico}
-                {texto_agendamento}
-                Nossa equipe técnica já foi alertada e em breve entraremos em contato. 👨‍💻
-                Equipe AjudaNoiz ⚡"""
-        
+
+Recebemos sua solicitação!
+🆔 Chamado: #{chamado_id}
+🔧 Serviço: {servico}
+{texto_agendamento}
+Nossa equipe técnica já foi alertada e em breve entraremos em contato. 👨‍💻
+
+Atenciosamente,
+Equipe AjudaNoiz ⚡"""
+
             enviar_email_notificacao(email, assunto_email, corpo_email)
-        
+
         except Exception as e_mail:
             print(f"⚠️ Erro ao enviar e-mail: {e_mail}")
 
@@ -185,11 +199,16 @@ def admin():
 
         # 2. Busca apenas os chamados daquela página específica
         sql = """
-            SELECT ch.*, ag.data_hora as data_agendada
+            SELECT
+            ch.*,
+            ag.data_hora as data_agendada,
+            u.id as usuario_id,
+            u.nome as usuario_nome
             FROM chamados ch
             LEFT JOIN agendamentos ag ON ch.id = ag.chamado_id
-            WHERE ch.ativo = 1 AND ch.data_exclusao IS NULL 
-            ORDER BY ch.data_criacao DESC 
+            LEFT JOIN usuarios u ON ch.tecnico_id = u.id
+            WHERE ch.ativo = 1 AND ch.data_exclusao IS NULL
+            ORDER BY ch.data_criacao DESC
             LIMIT %s OFFSET %s
         """
         cursor.execute(sql, (LIMITE, offset))
@@ -205,8 +224,9 @@ def admin():
 
     return render_template('admin.html', 
                            chamados=chamados, 
-                           pagina_atual=pagina, 
-                           total_paginas=total_paginas)
+                           pagina_atual='admin', 
+                           total_paginas=total_paginas,
+                           pagina=pagina)
 
 
 def registrar_log(chamado_id, acao):
@@ -262,15 +282,15 @@ def excluir(id):
         # 3. Notifica o cliente sobre o cancelamento/arquivamento
         if dados:
             assunto = f"❌ Chamado #{id}: Cancelado/Excluído."
-            corpo = f"""Olá {dados['nome']},
-            
-            Informamos que o seu chamado número #{id} foi removido do nosso painel de atendimento ativo.
+            corpo = f"""Olá {dados['nome']}, 👋
 
-            Se isso foi um erro ou se você ainda precisa de suporte, por favor, abra uma nova solicitação em nosso site.
+Informamos que o seu chamado número #{id} foi removido do nosso painel de atendimento ativo.
 
-            Atenciosamente,
-            Equipe AjudaNoiz ⚡"""
-            
+Se isso foi um erro ou se você ainda precisa de suporte, por favor, abra uma nova solicitação em nosso site.
+
+Atenciosamente,
+Equipe AjudaNoiz ⚡"""
+
             enviar_email_notificacao(dados['email'], assunto, corpo)
 
         # 4. Registra no histórico que foi arquivado
@@ -343,10 +363,15 @@ def assumir_chamado(id):
             corpo = f"Olá {dados['nome']},\n\nSeu agendamento para o chamado #{id} foi confirmado para {data_f}.\n\nTécnico: {session['usuario_nome']}\n\nEquipe AjudaNoiz ⚡"
         else:
             assunto = f"👨‍💻 Chamado #{id}: Técnico Atribuído."
-            corpo = f"Olá {dados['nome']}, o técnico {session['usuario_nome']} assumiu seu chamado e já está trabalhando nele! 🚀"
+            corpo = f"""Olá {dados['nome']}, 👋
+
+O técnico {session['usuario_nome']} assumiu seu chamado e já está trabalhando nele! 🚀
+
+Atenciosamente,
+Equipe AjudaNoiz ⚡"""
 
         enviar_email_notificacao(dados['email'], assunto, corpo)
-        
+
         # 4. Log e Feedback[cite: 12]
         texto_log = "Retomou" if dados['status'] == 'Suspenso' else "Assumiu"
         registrar_log(id, f"{texto_log} o chamado (Status: {status_final})")
@@ -369,8 +394,8 @@ def suspender_chamado(id):
         return redirect('/login')
 
     conn = get_db_connection()
-    # CORREÇÃO: Adicionado dictionary=True para poder usar dados['nome']
-    cursor = conn.cursor(dictionary=True) 
+    #  Adicionado dictionary=True para poder usar dados['nome']
+    cursor = conn.cursor(dictionary=True)
     try:
         # 1. Busca os dados do cliente
         cursor.execute('''
@@ -392,12 +417,15 @@ def suspender_chamado(id):
         # 3. Dispara o E-mail
         assunto = f"⏳ Chamado #{id}: Suspenso."
         corpo = f"""Olá {dados['nome']}, 👋
-        
-        Passando para avisar que o seu chamado #{id} foi colocado em status de 'Suspenso' pelo técnico {session['usuario_nome']}. ⌛
 
-        Isso geralmente acontece quando precisamos de alguma informação adicional ou aguardamos uma peça/software. 
+Passando para avisar que o seu chamado #{id} foi colocado em status de 'Suspenso' pelo técnico {session['usuario_nome']}. ⌛
 
-        Fique tranquilo, assim que retomarmos o atendimento, você será avisado! ⚡"""
+Isso geralmente acontece quando precisamos de alguma informação adicional ou aguardamos uma peça/software. 
+
+Fique tranquilo, assim que retomarmos o atendimento, você será avisado!
+
+Atenciosamente,
+Equipe AjudaNoiz ⚡"""
 
         enviar_email_notificacao(dados['email'], assunto, corpo)
 
@@ -416,6 +444,65 @@ def suspender_chamado(id):
 
     return redirect('/admin')
 
+
+@app.route('/retomar/<int:id>', methods=['POST'])
+def retomar_chamado(id):
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    #  Adicionado dictionary=True para poder usar dados['nome']
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # 1. Busca os dados do cliente
+        cursor.execute('''
+            SELECT c.nome, c.email
+            FROM chamados ch
+            JOIN clientes c ON ch.cliente_id = c.id
+            WHERE ch.id = %s
+        ''', (id,))
+        dados = cursor.fetchone()
+
+        # 2. Alterado o status do chamado de Suspenso para Em progresso
+        # e garantindo que o status mude de 'Suspenso' para 'Em progresso'
+        cursor.execute("""
+            UPDATE chamados
+            SET status = 'Em progresso'
+            WHERE id = %s AND status = 'Suspenso'
+        """, (id,))
+        
+        conn.commit()
+
+        if dados:
+            assunto = f"🚀 Chamado #{id}: Retomado."
+            corpo = f"""Olá {dados['nome']}, 👋
+
+O técnico {session['usuario_nome']} retomou o seu atendimento agora mesmo! ⚡
+
+Caso o problema persista ou precise de algo novo, estamos à disposição.
+
+Atenciosamente,
+Equipe AjudaNoiz ⚡"""
+
+            enviar_email_notificacao(dados['email'], assunto, corpo)
+
+        # *Grava o histórico
+        registrar_log(id, "Retomou o chamado (Status: Em progresso)")
+
+        flash("Chamado retomado com sucesso! Mãos à obra. 🛠️", "success")
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro ao acessar a tabela chamados: {e}")
+        flash(f"Erro técnico: {e}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect('/admin')
+
+
 @app.route('/concluir/<int:id>', methods=['POST'])
 def concluir_chamado(id):
     if 'usuario_id' not in session:
@@ -433,11 +520,16 @@ def concluir_chamado(id):
         conn.commit()
 
         if info:
-            assunto = f"✅ Chamado #{id}: Chamado Concluído."
-            corpo = f"""Olá {info[1]}! Seu atendimento foi finalizado com sucesso. 🏁
-    
-                Caso o problema persista ou precise de algo novo, estamos à disposição.
-                Obrigado por confiar na AjudaNoiz! ⚡"""
+            assunto = f"✅ Chamado #{id}: Concluído."
+            corpo = f"""Olá {info[1]}, 👋
+
+Seu atendimento foi finalizado com sucesso. 🏁
+
+Caso o problema persista ou precise de algo novo, estamos à disposição.
+
+Atenciosamente,
+Equipe AjudaNoiz ⚡"""
+
             enviar_email_notificacao(info[0], assunto, corpo)
 
         # *Grava o histórico
@@ -461,12 +553,19 @@ def ver_chamado(id):
     cursor = conn.cursor(dictionary=True)
 
     # 1. Busca os detalhes do chamado
-    cursor.execute("SELECT * FROM chamados WHERE id = %s", (id,))
+    cursor.execute("""SELECT
+        ch.*,
+        u.id as usuario_id,
+        u.nome as usuario_nome
+        FROM chamados ch
+        LEFT JOIN usuarios u ON ch.tecnico_id = u.id
+        WHERE ch.id = %s
+    """, (id,))
     chamado = cursor.fetchone()
 
     # 2. Busca o histórico (Timeline)
     cursor.execute("""
-        SELECT h.*, u.nome as nome_usuario 
+        SELECT h.*, u.nome as usuario_nome
         FROM historico_chamados h
         JOIN usuarios u ON h.usuario_id = u.id
         WHERE h.chamado_id = %s
@@ -487,9 +586,9 @@ def ver_chamado(id):
     cursor.close()
     conn.close()
 
-    return render_template('detalhes_chamado.html', 
-                           chamado=chamado, 
-                           historico=historico, 
+    return render_template('detalhes_chamado.html',
+                           chamado=chamado,
+                           historico=historico,
                            tempo_total=tempo_formatado)
 
 
@@ -620,8 +719,14 @@ def buscar_clientes(id):
 
 @app.route('/admin/clientes/excluir/<int:id>', methods=['POST'])
 def excluir_cliente(id):
+    # 1. Verificação de Autenticação
     if 'usuario_id' not in session:
         return redirect('/login')
+    
+    # 2. Verificação de Autorização (Nível de Acesso)
+    if session.get('usuario_cargo') != 'admin':
+        flash('Alteração restrita aos administradores!', 'danger')
+        return redirect('/admin/clientes')
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -639,12 +744,57 @@ def excluir_cliente(id):
     return redirect('/admin/clientes')
 
 
+@app.route('/admin/cliente/editar/<int:id>')
+def editar_cliente(id):
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM clientes WHERE id = %s", (id,))
+    cliente = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    return render_template('editar_cliente.html', cliente=cliente)
+
+
+@app.route('/admin/cliente/atualizar/<int:id>', methods=['POST'])
+def atualizar_cliente(id):
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    nome = request.form.get('nome')
+    email = request.form.get('email')
+    whatsapp = request.form.get('whatsapp')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE clientes 
+            SET nome = %s, email = %s, whatsapp = %s 
+            WHERE id = %s
+        """, (nome, email, whatsapp, id))
+        conn.commit()
+        flash("Dados do cliente atualizados!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Erro ao atualizar: {e}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect('/admin/clientes')
+
+
 @app.route('/chamado/<int:id>/nota', methods=['POST'])
 def adicionar_nota(id):
     if 'usuario_id' not in session:
         return redirect('/login')
 
-    nota = request.form.get('nota')
+    nota_bruta = request.form.get('nota')
+    nota = nota_bruta.strip() if nota_bruta else ""
     tempo = request.form.get('tempo', 0)
 
     # 1. Preparando o resumo para o histórico
@@ -656,9 +806,9 @@ def adicionar_nota(id):
     try:
         # --- NOVIDADE: BUSCA O E-MAIL E NOME DO CLIENTE ---
         cursor.execute('''
-            SELECT c.nome, c.email 
-            FROM clientes c 
-            JOIN chamados ch ON c.id = ch.cliente_id 
+            SELECT c.nome, c.email
+            FROM clientes c
+            JOIN chamados ch ON c.id = ch.cliente_id
             WHERE ch.id = %s
         ''', (id,))
         cliente = cursor.fetchone()
@@ -678,13 +828,16 @@ def adicionar_nota(id):
             assunto = f"🛠️ Chamado #{id}: Nova atualização"
             corpo = f"""Olá {cliente['nome']}, 👋
             
-                Uma nova atualização técnica foi registrada no seu chamado:
-                --------------------------------------------------
-                "{nota_resumo}"
-                --------------------------------------------------
+Uma nova atualização técnica foi registrada no seu chamado:
+--------------------------------------------------
+{nota_resumo}
+--------------------------------------------------
 
-                Tempo investido nesta etapa: {tempo} min.
-                Nossa equipe continua trabalhando na sua solicitação. ⚡"""
+Tempo investido nesta etapa: {tempo} min.
+Nossa equipe continua trabalhando na sua solicitação.
+
+Atenciosamente,
+Equipe AjudaNoiz ⚡"""
             
             enviar_email_notificacao(cliente['email'], assunto, corpo)
 
@@ -739,21 +892,41 @@ def enviar_fatura_email(id):
     # 1. Coleta os dados (Lógica similar à que discutimos antes)
     from utilitarios import calcular_total_fatura
     financeiro = calcular_total_fatura(id)
+    valor_total = financeiro['valor_total']
+    valor_total_formatado = f"{valor_total:.2f}".replace('.',',')
     
     # Busca dados do cliente (ID, nome, email)
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-    SELECT ch.id, ch.servico_titulo, ch.data_criacao, c.nome, c.email, c.whatsapp 
-        FROM chamados ch 
-        JOIN clientes c ON ch.cliente_id = c.id 
+    SELECT ch.id, ch.servico_titulo, ch.data_criacao, c.nome, c.email, c.whatsapp, c.ativo
+        FROM chamados ch
+        JOIN clientes c ON ch.cliente_id = c.id
         WHERE ch.id = %s
     """, (id,))
     cliente = cursor.fetchone()
+
+    try:
+        sql_insert = """
+            INSERT INTO faturas_geradas (cliente_nome, cliente_email, valor_total, data_geracao, chamado_id, status_envio)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        # Salvamos como 'Paga' ou 'Enviada', dependendo da sua regra
+        cursor.execute(sql_insert, (
+            cliente['nome'], 
+            cliente['email'], 
+            valor_total, 
+            datetime.now(), 
+            id, 
+            'Enviada'
+        ))
+        conn.commit()
+    except Exception as e:
+        print(f"Erro ao registrar fatura no banco: {e}")
     
     # 2. Gera o HTML do PDF
     html_fatura = render_template('fatura_template.html', 
-                                 chamado=cliente, 
+                                 chamado=cliente,
                                  financeiro=financeiro, 
                                  data_atual=datetime.now().strftime('%d/%m/%Y'))
 
@@ -765,11 +938,14 @@ def enviar_fatura_email(id):
     # 4. Cria e envia o E-mail
     msg = Message(f"Fatura do Atendimento #{id} - AjudaNoiz TI",
                   recipients=[cliente['email']])
-    msg.body = f"Olá {cliente['nome']},\n\nSegue em anexo a fatura referente ao seu atendimento técnico.\n\nTotal: R$ {financeiro['valor_total']}"
-    
+    msg.body = f"""Olá {cliente['nome']},\n\nSegue em anexo a fatura referente ao seu atendimento técnico.\n\nTotal: R$ {valor_total_formatado}
+
+Atenciosamente,
+Equipe AjudaNoiz ⚡"""
+
     # Anexa o PDF (nome do arquivo, tipo mime, conteúdo)
     msg.attach(f"fatura_ajudanoiz_{id}.pdf", "application/pdf", pdf)
-    
+
     try:
         mail.send(msg)
         flash(f"Fatura enviada com sucesso para {cliente['email']}!", "success")
@@ -782,15 +958,25 @@ def enviar_fatura_email(id):
 @app.route('/admin/configuracoes')
 def exibir_configuracoes():
     # Busca o valor atual para exibir no formulário
-    from utilitarios import obter_valor_hora # Vamos adicionar essa no utilitarios.py
-    valor = obter_valor_hora()
-    return render_template('configuracoes.html', 
-                           valor_hora=valor, 
+    from utilitarios import obter_valor_hora  # Vamos adicionar essa no utilitarios.py
+    valor_bruto = obter_valor_hora()
+    valor = f"{valor_bruto:.2f}"
+    return render_template('configuracoes.html',
+                           valor_hora=valor,
                            pagina_atual='configuracoes')
 
 
 @app.route('/admin/configuracoes/salvar', methods=['POST'])
 def salvar_configuracoes():
+    # 1. Verificação de Autenticação
+    if 'usuario_id' not in session:
+        return redirect('/login')
+    
+    # 2. Verificação de Autorização (Nível de Acesso)
+    if session.get('usuario_cargo') != 'admin':
+        flash('Alteração restrita aos administradores!', 'danger')
+        return redirect('/admin/configuracoes')
+
     novo_valor = request.form.get('valor_hora')
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -811,10 +997,69 @@ def salvar_configuracoes():
     return redirect(url_for('exibir_configuracoes'))
 
 
+@app.route('/admin/faturas')
+def consultar_faturas():
+    # 1. Verificação de Autenticação
+    if 'usuario_id' not in session:
+        return redirect('/login')
+    
+    # 2. Verificação de Autorização (Nível de Acesso)
+    if session.get('usuario_cargo') != 'admin':
+        flash('Área restrita aos administradores!', 'danger')
+        return redirect('/admin')
+
+    # Pega mês e ano dos parâmetros da URL ou usa o atual como padrão
+    mes = request.args.get('mes', datetime.now().strftime('%m'))
+    ano = request.args.get('ano', datetime.now().strftime('%Y'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # 1. Busca todas as faturas do período selecionado
+        query_faturas = """
+            SELECT id, cliente_nome, cliente_email, valor_total, data_geracao, status_envio 
+            FROM faturas_geradas 
+            WHERE MONTH(data_geracao) = %s AND YEAR(data_geracao) = %s
+            ORDER BY data_geracao DESC
+        """
+        cursor.execute(query_faturas, (mes, ano))
+        faturas = cursor.fetchall()
+
+        # 2. Calcula a soma total do período
+        # Opção A: Via SQL (Mais rápido)
+        query_soma = """
+            SELECT SUM(valor_total) as soma_total 
+            FROM faturas_geradas
+            WHERE MONTH(data_geracao) = %s AND YEAR(data_geracao) = %s
+        """
+        cursor.execute(query_soma, (mes, ano))
+        resultado_soma = cursor.fetchone()
+        valor_total_periodo = resultado_soma['soma_total'] or 0.0
+
+    except Exception as e:
+        print(f"Erro ao recuperar faturas: {e}")
+        faturas = []
+        valor_total_periodo = 0.0
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render_template('historico_faturas.html',
+                           faturas=faturas,
+                           total_periodo=valor_total_periodo,
+                           mes_selecionado=mes,
+                           ano_selecionado=ano)
+
 @app.route('/admin/usuarios')
 def gerenciar_usuarios():
-    if 'usuario_id' not in session or session.get('usuario_cargo') != 'admin':
-        flash('Acesso restrito a administradores!', 'danger')
+    # 1. Verificação de Autenticação
+    if 'usuario_id' not in session:
+        return redirect('/login')
+    
+    # 2. Verificação de Autorização (Nível de Acesso)
+    if session.get('usuario_cargo') != 'admin':
+        flash('Área restrita aos administradores!', 'danger')
         return redirect('/admin')
     
     conn = get_db_connection()
@@ -828,6 +1073,15 @@ def gerenciar_usuarios():
 
 @app.route('/admin/usuarios/salvar', methods=['POST'])
 def salvar_usuarios():
+    # 1. Verificação de Autenticação
+    if 'usuario_id' not in session:
+        return redirect('/login')
+
+    # 2. Verificação de Autorização (Nível de Acesso)
+    if session.get('usuario_cargo') != 'admin':
+        flash('Área restrita aos administradores!', 'danger')
+        return redirect('/admin')
+
     nome = request.form.get('nome')
     email = request.form.get('email')
     senha = request.form.get('senha')

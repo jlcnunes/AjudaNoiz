@@ -1,448 +1,239 @@
-/** Estilo para o formulário */
+/* ==========================================================================
+   1. VARIÁVEIS E IDENTIDADE VISUAL (AjudaNoiz: Urbano & Humanizado)
+   ========================================================================== */
+:root {
+    --primary: #2c3e50;       /* Azul Urbano Profundo (Profissionalismo) */
+    --accent: #25d366;        /* Verde WhatsApp (Acessível/Humano) */
+    --accent-hover: #128c7e;
+    --bg-light: #f0f2f5;      /* Fundo suave para não cansar a vista */
+    --white: #ffffff;
+    --danger: #d63031;        /* Vermelho vibrante para exclusão */
+    --warning: #f39c12;       /* Alerta para chamados pendentes */
+    --info: #0984e3;          /* Azul para detalhes */
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    --radius: 12px;           /* Bordas arredondadas = design amigável */
+}
+
+/* ==========================================================================
+   2. RESET E TIPOGRAFIA
+   ========================================================================== */
+* { box-sizing: border-box; }
 
 body { 
-    font-family: seans-serif; 
-    max-width: 500px; 
-    margin: 50px auto; 
-    padding: 20px; 
-    line-height: 1.6;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    margin: 0; 
+    padding: 0; 
+    line-height: 1.6; 
+    background-color: var(--bg-light); 
+    color: var(--primary);
 }
 
-.form-group { 
-    margin-bottom: 15px; 
-}
+h1, h2, h3 { font-weight: 700; color: var(--primary); }
 
-label {
-    display: block; 
-    font-weight: bold; 
-}
+/* ==========================================================================
+   3. LAYOUT ADMINISTRATIVO (SIDEBAR MODERNA)
+   ========================================================================== */
+.admin-layout { display: flex; min-height: 100vh; }
 
-input, select, textarea {
-    width: 100%; 
-    padding: 8px; 
-    margin-top: 5px; 
-    box-sizing: border-box 
-}
-
-/** Estilos para o Painel Admin */
-.admin-body {
-    max-width: 90% !important; /* Painel precisa de mais espaço que o formulário */
-}
-
-.admin-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    background: white;
-}
-
-.admin-table th, .admin-table td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    text-align: left;
-}
-
-.admin-table th {
-    background-color: #25d366;
-    color: white;
-}
-
-.admin-table tr:nth-child(even) { background-color: #f2f2f2; }
-.admin-table tr:hover { background-color: #ddd; }
-
-/* Organiza os botões em linha dentro da célula */
-.acoes-container {
+.sidebar {
+    width: 280px;
+    background-color: var(--primary);
+    color: var(--white);
+    padding: 30px 20px;
+    flex-shrink: 0;
     display: flex;
-    gap: 8px; /* Espaço entre os botões */
-    align-items: center;
+    flex-direction: column;
 }
 
-.btn-acao {
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    background-color: #28a745;
-    color: white; 
+.sidebar-logo h2 {
+    color: var(--accent);
+    margin: 0 0 40px 0;
+    font-size: 1.8rem;
+    text-align: center;
+    letter-spacing: -1px;
+}
+
+.menu-nav { display: flex; flex-direction: column; gap: 8px; }
+
+.menu-item {
+    color: #bdc3c7;
     text-decoration: none;
-    cursor: pointer;
-    box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
-    padding: 5px 10px;
-    height: 32px;
-    white-space: nowrap; /* Impede que o texto do botão quebre */
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-   
-}
-
-.btn-acao:hover {
-    background-color: #128c7e; 
-}
-
-.btn-excluir {
-    background-color: #ff4d4d;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    height: 32px;
-    white-space: nowrap; /* Impede que o texto do botão quebre */
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.btn-excluir:hover { background-color: #cc0000; }
-
-/** Badges de Status (Opcional, mas ajuda no visual) */
-.status-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-.status-pendente { background-color: #ffeeba; color: #856404; }
-.status-progresso { background-color: #b8daff; color: #004085; }
-
-
-/** Garante que o formulário não adicione margens extras */
-.td-acoes form {
-    margin: 0;
-    padding: 0;
-    display: inline-block;
-}
-
-.btn-voltar {
-    background-color: #6c757d; 
-    text-decoration: none; 
-    color: white; 
-    padding: 10px; 
-    border-radius: 4px;
-}
-
-/** Padronização final do botão para evitar variações de altura */
-.btn-acao, .btn-excluir, .btn-voltar {
-    height: 32px;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 10px;
-    box-sizing: border-box;
-    vertical-align: middle;
-}
-
-/* Alinhamento horizontal dos botões */
-.acoes-wrapper {
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    transition: all 0.3s ease;
     display: flex;
-    gap: 5px;
-    justify-content: flex-start;
     align-items: center;
-}
-
-.acoes-wrapper form {
-    margin: 0;
-    padding: 0;
-    display: flex;
-}
-
-
-.admin-table td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    vertical-align: middle; /* Alinhamento vertical clássico de tabela */
-}
-/* Container da Nota Técnica */
-.nota-tecnica-container {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #dee2e6;
-}
-
-.nota-tecnica-container h3 {
-    margin-top: 0;
-    color: #333;
-    font-size: 1.2rem;
-}
-
-.nota-textarea {
-    width: 100%;
-    padding: 12px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    font-family: inherit;
-    resize: vertical;
-    box-sizing: border-box;
-}
-
-/** Estilização da Linha do Tempo (Timeline) */
-.timeline {
-    list-style: none;
-    padding: 0;
-    position: relative;
-}
-
-.timeline-item {
-    margin-bottom: 15px;
-    padding: 12px 15px;
-    border-left: 4px solid #007bff;
-    background: white;
-    border-radius: 0 4px 4px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-/** Diferenciando Notas Técnicas no histórico */
-.timeline-item.nota-importante {
-    border-left-color: #28a745; /* Verde para notas */
-    background: #f0fff4;
-}
-
-.timeline-date {
-    font-weight: bold;
-    font-size: 0.85rem;
-    color: #666;
-    display: block;
-    margin-bottom: 5px;
-}
-
-.timeline-content {
-    color: #333;
-}
-
-/* Container do formulário de nota para alinhar tempo e botão */
-.nota-form-footer {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    margin-top: 10px;
-}
-
-.input-tempo {
-    width: 120px !important; /* Força largura menor para o campo de minutos */
-    margin-top: 0 !important;
-}
-
-/* Badge de Tempo Acumulado */
-.tempo-badge {
-    background-color: #17a2b8;
-    color: white;
-    padding: 8px 15px;
-    border-radius: 50px;
-    font-weight: bold;
-    display: inline-block;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.nota-tecnica-container {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #dee2e6;
-}
-
-.nota-form-footer {
-    display: flex;
-    gap: 15px;
-    align-items: flex-end; /* Alinha o botão com o campo de input */
-    margin-top: 10px;
-}
-
-/* No seu style.css, adicione/ajuste: */
-.input-tempo {
-    max-width: 150px;
-    display: inline-block;
-}
-
-/* Garante que o histórico novo ocupe bem a tela */
-.timeline {
-    margin-top: 30px;
-    border-top: 1px solid #eee;
-    padding-top: 20px;
-}
-
-/* Container de formulários administrativos (Cards) */
-.admin-card {
-    background: white;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-bottom: 30px;
-    color: #333;
-}
-
-/* Grid para formulários de duas colunas */
-.grid-form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-/* Ajuste para campos que ocupam a linha toda no grid */
-.full-width {
-    grid-column: span 2;
-}
-
-/* Badges de Nível de Acesso */
-.badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.badge-admin {
-    background-color: #e3f2fd;
-    color: #0d47a1;
-    border: 1px solid #bbdefb;
-}
-
-.badge-tecnico {
-    background-color: #f5f5f5;
-    color: #424242;
-    border: 1px solid #e0e0e0;
-}
-
-/* Mensagens de Alerta (Flash) */
-.alert {
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 4px;
+    gap: 12px;
     font-weight: 500;
 }
 
-.alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-
-/* Container de Sucesso Centralizado */
-.sucesso-container {
-    max-width: 600px;
-    margin: 100px auto;
-    text-align: center;
-    background: white;
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+.menu-item:hover, .menu-item.active {
+    background-color: rgba(255,255,255,0.1);
+    color: var(--accent);
 }
 
-.sucesso-icon {
-    font-size: 60px;
-    color: #25d366;
-    margin-bottom: 20px;
+.main-content { flex-grow: 1; padding: 40px; overflow-y: auto; }
+
+/* ==========================================================================
+   4. COMPONENTES (CARDS E TABELAS)
+   ========================================================================== */
+.admin-card, .cliente-card {
+    background: var(--white);
+    padding: 25px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 30px;
+    border-top: 5px solid var(--accent);
 }
 
-.chamado-badge {
-    background-color: #f0f2f5;
-    padding: 10px 20px;
+.admin-table, .cliente-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.admin-table, .cliente-table th {
+    text-align: left;
+    padding: 15px;
+    border-bottom: 2px solid #eee;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.admin-table, .cliente-table td {
+    padding: 15px;
+    border-bottom: 1px solid #f1f1f1;
+    font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   5. BOTÕES DE AÇÃO (PROPOSTA URBANA)
+   ========================================================================== */
+.btn-p-acao {
+    padding: 8px 12px;
     border-radius: 8px;
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
-    font-size: 1.2rem;
-    color: #333;
-    display: inline-block;
-    margin: 20px 0;
-}
-
-/* --- Nova Barra de Ações Rápidas --- */
-.admin-toolbar {
-    display: flex;
-    gap: 12px;
-    margin: 20px 0;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #eee;
-    flex-wrap: wrap; /* Garante que quebre linha em telas menores */
-}
-
-.btn-toolbar {
-    background: white;
-    color: #444;
-    border: 1px solid #ddd;
-    padding: 8px 16px;
-    border-radius: 6px;
+    font-size: 0.85rem;
+    color: white !important;
     text-decoration: none;
-    font-size: 13px;
-    font-weight: 600;
+    border: none;
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 6px;
     transition: all 0.2s ease;
+    font-weight: 600;
 }
 
-.btn-toolbar:hover {
-    background: #25d366;
-    color: white;
-    border-color: #25d366;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+.btn-detalhes { background-color: var(--info); }
+.btn-assumir { background-color: var(--warning); }
+.btn-suspender { background-color: #636e72; }
+.btn-retomar { background-color: var(--primary); }
+.btn-concluir { background-color: var(--accent); }
+.btn-excluir-mini { background-color: var(--danger); }
+
+.btn-p-acao:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-/* No seu style.css, adicione esta linha junto aos outros alerts */
-.alert-warning { 
-    background-color: #fff3cd; 
-    color: #856404; 
-    border: 1px solid #ffeeba; 
+.td-acoes { display: flex; gap: 6px; align-items: center; }
+
+/* ==========================================================================
+   6. STATUS E BADGES (HUMANIZADO)
+   ========================================================================== */
+.badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: capitalize;
 }
 
-/* Garante que o container de alertas não fique colado no topo */
-.container.mt-2 {
-    margin-top: 20px;
-}
+.status-novo { background-color: #ebf5ff; color: #007bff; border: 1px solid #cce5ff; }
+.status-em-progresso { background-color: #e3fcef; color: #155724; border: 1px solid #c3e6cb; }
+.status-suspenso { background-color: #f2f2f2; color: #555; }
+.status-ag_pendente { background-color: #ffeaa7; color: #d35400; }
+.status-agendado { background-color: var(--info); color: white; border: 1px solid var(--info)}
+.status-concluido { background-color: var(--accent); color: white; }
 
-/* Estilo para o ícone de agendamento */
-.info-agendamento {
-    cursor: help;
-    margin-left: 5px;
-    color: #6f42c1;
-    font-size: 0.9em;
-}
-
-.status-badge {
-    display: inline-flex;
+/* ==========================================================================
+   7. FORMULÁRIO DO CLIENTE (INDEX.HTML)
+   ========================================================================== */
+.client-body {
+    display: flex;
+    justify-content: center;
     align-items: center;
-    white-space: nowrap; /* Impede que o texto "Agendado" quebre */
-    padding: 4px 10px;
-    gap: 5px;
+    min-height: 100vh;
+    padding: 20px;
+    background: linear-gradient(135deg, #2c3e50 0%, #25d366 100%); /* Degradê Urbano */
 }
 
-/* Cores específicas para o status Agendado */
-.status-Agendado {
-    background-color: #e2d9f3;
-    color: #6f42c1;
-    border: 1px solid #d1c4e9;
+.client-card {
+    background: var(--white);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    max-width: 500px;
+    width: 100%;
 }
 
-/* Garante que a coluna de ações tenha um tamanho mínimo para não esmagar os botões */
-.admin-table td:last-child {
-    min-width: 180px;
+.client-card h1 { text-align: center; margin-bottom: 10px; font-size: 2rem; }
+.client-card p { text-align: center; color: #666; margin-bottom: 30px; }
+
+input, select, textarea {
+    width: 100%;
+    padding: 12px 15px;
+    margin-top: 8px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
 }
 
-/* No seu style.css */
-.status-Agendamento.pendente { /* O navegador converte espaços em pontos ou hifens às vezes, dependendo da classe */
-    background-color: #ffeeba;
-    color: #856404;
+input:focus { border-color: var(--accent); outline: none; }
+
+.btn-enviar-cliente {
+    background-color: var(--accent);
+    color: white;
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: 0.3s;
 }
 
-/* Garante que a célula de ações não aperte os botões */
-.td-acoes {
-    min-width: 210px; /* Largura suficiente para 2 botões + lixeira */
-    vertical-align: middle !important;
+.btn-enviar-cliente:hover { background-color: var(--accent-hover); }
+
+/* ==========================================================================
+   8. PÁGINA DE SUCESSO
+   ========================================================================== */
+.sucesso-container { text-align: center; }
+.sucesso-icon { font-size: 4rem; color: var(--accent); margin-bottom: 20px; }
+.chamado-badge {
+    display: inline-block;
+    background: var(--primary);
+    color: var(--accent);
+    padding: 10px 25px;
+    border-radius: 50px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 20px 0;
 }
 
-/* Botão de envio de fatura com efeito de hover suave */
-.btn-toolbar[style*="background-color: #25d366"]:hover {
-    background-color: #128c7e !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    transform: translateY(-1px);
+/* ==========================================================================
+   9. ALERTAS DO SISTEMA
+   ========================================================================== */
+.alert {
+    padding: 15px 20px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    font-weight: 500;
 }
-
-/* Estilo para o container de faturamento nos detalhes */
-.admin-card h3 i {
-    color: #25d366;
-    margin-right: 8px;
-}
+.alert-success { background-color: #d4edda; color: #155724; border-left: 5px solid #28a745; }
+.alert-danger { background-color: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
