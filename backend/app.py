@@ -13,13 +13,14 @@ app = Flask(__name__,
 
 app.secret_key = "N3v3rM3ssTh@tSh1tB0y"
 
+
 @app.template_filter('brl')
 def brl_filter(valor):
     try:
-        float_valor = float(valor) # Garante que é um número
+        float_valor = float(valor)  # Garante que é um número
         return f"{float_valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     except (ValueError, TypeError):
-        return valor # Se não for número, retorna o que era antes
+        return valor  # Se não for número, retorna o que era antes
 
         
 # Configurações do Flask-Mail
@@ -27,7 +28,7 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'ajudanoizapp@gmail.com'
-app.config['MAIL_PASSWORD'] = 'zhsv xqnh bclk cyme' # 16 dígitos sem espaços
+app.config['MAIL_PASSWORD'] = 'zhsv xqnh bclk cyme'  # 16 dígitos sem espaços
 app.config['MAIL_DEFAULT_SENDER'] = ('AjudaNoiz', 'ajudanoizapp@gmail.com')
 
 mail = Mail(app)
