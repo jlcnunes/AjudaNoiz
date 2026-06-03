@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS agendamentos (
     tecnico_id INT NOT NULL,
     data_hora DATETIME NOT NULL,
     status VARCHAR(20) DEFAULT 'Confirmado',
-    FOREIGN KEY (chamado_id) REFERENCES chamados(id),
+    FOREIGN KEY (chamado_id) REFERENCES chamados(id) ON DELETE CASCADE,
     FOREIGN KEY (tecnico_id) REFERENCES usuarios(id),
     -- Garante que um técnico não tenha dois agendamentos no mesmo horário
     UNIQUE KEY tecnico_horario (tecnico_id, data_hora) 
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS configuracoes (
 );
 
 -- 7. Cria a tabela de faturas geradas
-CREATE TABLE faturas_geradas (
+CREATE TABLE IF NOT EXISTS faturas_geradas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     chamado_id INT NOT NULL,
     cliente_nome VARCHAR(255) NOT NULL,
