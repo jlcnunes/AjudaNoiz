@@ -890,7 +890,7 @@ def preparar_fatura(id):
 
 @app.route('/admin/chamado/<int:id>/enviar_fatura')
 def enviar_fatura_email(id):
-    # 1. Coleta os dados (Lógica similar à que discutimos antes)
+    # 1. Coleta os dados
     from utilitarios import calcular_total_fatura
     financeiro = calcular_total_fatura(id)
     valor_total = financeiro['valor_total']
@@ -912,7 +912,7 @@ def enviar_fatura_email(id):
             INSERT INTO faturas_geradas (cliente_nome, cliente_email, valor_total, data_geracao, chamado_id, status_envio)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
-        # Salvamos como 'Paga' ou 'Enviada', dependendo da sua regra
+        # Salvamos como 'Enviada'
         cursor.execute(sql_insert, (
             cliente['nome'], 
             cliente['email'], 
