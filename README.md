@@ -19,7 +19,7 @@ O AjudaNoiz é um projeto criado por José Nunes que se propõe a aplicar seus 2
 - Painel de gerenciamento dos chamados com login: 
 - Botões de ações: Assumir, Suspender, Concluir e Excluir
 - Secção de notas técnicas. 
-- Campo para inserção de tempo gasto na atividade e cálculo automático do tempo investimento em atendimento.
+- Campo para inserção de tempo gasto na atividade e cálculo automático do total de tempo investimento em atendimento.
 - Histórico das ações dos técnicos para fins de auditoria.
 - Secção de chamados arquivados após exclusão para fins de auditoria.
 - Painel de cadastro e atualização dos dados dos clientes. 
