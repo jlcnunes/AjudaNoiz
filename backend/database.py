@@ -3,9 +3,9 @@ import os
 
 # 1. Configuração (Lembrete: Mover para .env no futuro)
 Config = {
-    'user': 'ajudanoizapp_admin',
-    'password': '@ss1st3nc14S3gvra!',
-    'host': 'localhost',
+    "user": os.getenv("ajudanoizapp_admin"),
+    "password": os.getenv("@ss1st3nc14S3gvra!"),
+    "host": os.getenv("db"),
 }
 
 
@@ -13,7 +13,7 @@ def get_db_connection(incluir_banco=True):
     """Cria uma conexão com o MySQL de forma flexível."""
     parametros = Config.copy()
     if incluir_banco:
-        parametros['database'] = 'ajudanoizapp_db'
+        parametros["database"] = "ajudanoizapp_db"
     return mysql.connector.connect(**parametros)
 
 
@@ -27,11 +27,11 @@ def inicializar_banco():
 
     try:
         # Busca o schema.sql no mesmo diretório deste arquivo
-        caminho_sql = os.path.join(os.path.dirname(__file__), 'schema.sql')
+        caminho_sql = os.path.join(os.path.dirname(__file__), "schema.sql")
 
-        with open(caminho_sql, 'r', encoding='utf-8') as f:
+        with open(caminho_sql, "r", encoding="utf-8") as f:
             # Divide o arquivo por ';' para executar comando por comando
-            comandos_sql = f.read().split(';')
+            comandos_sql = f.read().split(";")
 
         for comando in comandos_sql:
             if comando.strip():
@@ -61,7 +61,7 @@ def executar_autoteste():
             "INSERT INTO usuarios (nome, email, senha_hash, cargo) "
             "VALUES (%s, %s, %s, %s)"
         )
-        cursor.execute(sql_ins, ('Teste', 't@t.com', '123', 'admin'))
+        cursor.execute(sql_ins, ("Teste", "t@t.com", "123", "admin"))
         id_teste = cursor.lastrowid
         print(f"   -> Insert OK (ID: {id_teste})")
 

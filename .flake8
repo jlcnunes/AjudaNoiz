@@ -1,0 +1,8 @@
+Ini, TOML
+
+[flake8]
+# Aumenta o limite de linha para combinar com o Black
+max-line-length = 88
+
+# Ignora os avisos de estilo que entram em conflito com o Black
+extend-ignore = E203, W503

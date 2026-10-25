@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+    # Serviço do MySQL
+    db:
+        image: mysql:8.0.43
+        container_name: mysql_dd
+        restart: always
+        environment:
+            MYSQL_ROOT_PASSWORD: Cpf34221740876
+            MYSQL_DATABASE: ajudanoizapp_db
+            MYSQL_USER: ajudanoizapp_admin
+            MYSQL_PASSWORD: @ss1st3nc14S3gvra!
+        ports:
+            - "3306:3306"
+        volumes:
+            - mysql_Data:/var/lib/mysql
+    
+    # Serviço da aplicação Flask
+    web:
+        build: .
+        image: ajudanoizapp:latest
+        container_name: flask_app
+        restart: always
+        ports:
+            - "5000:5000"
+        environment:
+            - FLASK_APP=app.py
+            - FLASK_ENV=development
+            - FLASK_DEBUG=1
+            # String de conexão configurada para o MySQL apontando para o serviço 'db'
+            - DATABASE_URL=mysql+pymysql://ajudanoizapp_admin:@ss1st3nc14S3gvra!@db:3306/ajudanoizapp_db
+        volumes:
+            - .:/app
+        depends_on:
+            - db
+    volumes:
+        mysql_data:
+
