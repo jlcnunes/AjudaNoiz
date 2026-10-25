@@ -1,0 +1,16 @@
+# Ambientes virtuais
+venv/
+.venv/
+env/
+
+# Arquivos do Git e IDEs
+.git/
+.gitignore
+.vscode/
+
+# Arquivos temporários de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
