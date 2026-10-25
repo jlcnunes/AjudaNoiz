@@ -10,7 +10,7 @@ services:
             MYSQL_ROOT_PASSWORD: Cpf34221740876
             MYSQL_DATABASE: ajudanoizapp_db
             MYSQL_USER: ajudanoizapp_admin
-            MYSQL_PASSWORD: @ss1st3nc14S3gvra!
+            MYSQL_PASSWORD: "@ss1st3nc14S3gvra!"
         ports:
             - "3306:3306"
         volumes:
