@@ -10,7 +10,7 @@ services:
             MYSQL_USER: ajudanoizapp_admin
             MYSQL_PASSWORD: "@ss1st3nc14S3gvra!"
         ports:
-            - "3306:3306"
+            - "3307:3306"
         volumes:
             - mysql_data:/var/lib/mysql
     
