@@ -23,9 +23,10 @@ services:
         ports:
             - "5000:5000"
         environment:
-            - FLASK_APP=app.py
+            - FLASK_APP=backend.app
             - FLASK_ENV=development
             - FLASK_DEBUG=1
+            - PYTHONPATH=/app/backend
             # String de conexão configurada para o MySQL apontando para o serviço 'db'
             - DATABASE_URL=mysql+pymysql://ajudanoizapp_admin:@ss1st3nc14S3gvra!@db:3306/ajudanoizapp_db
         volumes:
