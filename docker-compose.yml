@@ -12,7 +12,7 @@ services:
         ports:
             - "3306:3306"
         volumes:
-            - mysql_Data:/var/lib/mysql
+            - mysql_Data: /var/lib/mysql
     
     # Serviço da aplicação Flask
     web:
@@ -34,4 +34,3 @@ services:
             - db
 volumes:
     mysql_data:
-
