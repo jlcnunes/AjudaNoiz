@@ -3,9 +3,10 @@ import os
 
 # 1. Configuração (Lembrete: Mover para .env no futuro)
 Config = {
-    "user": os.getenv("ajudanoizapp_admin"),
-    "password": os.getenv("@ss1st3nc14S3gvra!"),
-    "host": os.getenv("db"),
+    "user": os.getenv("DB_USER", "ajudanoizapp_admin"),
+    "password": os.getenv("DB_PASSWORD"),
+    "host": os.getenv("DB_HOST", "db"),
+    "port": int(os.getenv("DB_PORT", "3306")),
 }
 
 
