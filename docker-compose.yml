@@ -2,7 +2,7 @@ services:
     # Serviço do MySQL
     db:
         image: mysql:8.0.43
-        container_name: mysql_dd
+        container_name: mysql_db
         restart: always
         environment:
             MYSQL_ROOT_PASSWORD: Cpf34221740876
