@@ -12,6 +12,7 @@ services:
         ports:
             - "3307:3306"
         volumes:
+            - ./backend:/docker-entrypoint-initdb.d
             - mysql_data:/var/lib/mysql
     
     # Serviço da aplicação Flask
