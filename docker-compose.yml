@@ -32,6 +32,10 @@ services:
             - DB_PORT=3306
             - DB_USER=ajudanoizapp_admin
             - DB_PASSWORD=@ss1st3nc14S3gvra!
+            - ADMIN_NAME=${ADMIN_NAME:?Set ADMIN_NAME in .env}
+            - ADMIN_USER=${ADMIN_USER:?Set ADMIN_USER in .env}
+            - ADMIN_PASSWORD=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+
             # String de conexão configurada para o MySQL apontando para o serviço 'db'
             - DATABASE_URL=mysql+pymysql://ajudanoizapp_admin:@ss1st3nc14S3gvra!@db:3306/ajudanoizapp_db
         volumes:

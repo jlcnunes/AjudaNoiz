@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS chamados(
     data_exclusao DATETIME NULL,
     FOREIGN KEY (tecnico_id) REFERENCES usuarios(id),
     FOREIGN KEY (cliente_id) REFERENCES clientes(id),
-    deseja_agendar VARCHAR(3) DEFAULT 'NÃO',
+    deseja_agendar VARCHAR(3) CHARACTER SET utf8mb4 DEFAULT 'NÃO',
     data_proposta DATETIME NULL
 );
 

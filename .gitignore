@@ -17,3 +17,6 @@ desktop.ini
 # Pasta de uploads (Geralmente não enviamos as fotos/PDFs de teste para o Git)
 uploads/*
 !uploads/.gitkeep
+
+# Configurações do ambiente
+.env

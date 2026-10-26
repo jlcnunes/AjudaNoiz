@@ -1,11 +1,12 @@
 from werkzeug.security import generate_password_hash
 from database import get_db_connection
+import os
 
 
 def cadastrar_primeiro_admin():
-    nome = "Administrador"
-    email = "admin@ajudanoiz.tech"
-    senha_plana = "@cc3ssMan@gerOnly!"
+    nome = os.environ["ADMIN_NAME"]
+    email = os.environ["ADMIN_USER"]
+    senha_plana = os.environ["ADMIN_PASSWORD"]
 
     # * Gerando o Hash
     hash_seguro = generate_password_hash(senha_plana)
